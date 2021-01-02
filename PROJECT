@@ -3,4 +3,8 @@ layout: go.kubebuilder.io/v2
 multigroup: true
 projectName: k3os-config-operator
 repo: github.com/annismckenzie/k3os-config-operator
+resources:
+- group: config
+  kind: K3OSConfig
+  version: v1alpha1
 version: 3-alpha

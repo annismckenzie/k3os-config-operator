@@ -1,0 +1,24 @@
+# permissions for end users to edit k3osconfigs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k3osconfig-editor-role
+rules:
+- apiGroups:
+  - config.operators.annismckenzie.github.com
+  resources:
+  - k3osconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - config.operators.annismckenzie.github.com
+  resources:
+  - k3osconfigs/status
+  verbs:
+  - get

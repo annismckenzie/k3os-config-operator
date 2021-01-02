@@ -34,6 +34,9 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
+	configcontroller "github.com/annismckenzie/k3os-config-operator/controllers/config"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -45,6 +48,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
+	utilruntime.Must(configv1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -71,6 +75,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&configcontroller.K3OSConfigReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("K3OSConfig"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "K3OSConfig")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
