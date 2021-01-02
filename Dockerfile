@@ -16,8 +16,8 @@ RUN go mod download
 
 # Copy the go source
 COPY main.go main.go
-# COPY apis/ apis/
-# COPY controllers/ controllers/
+COPY apis/ apis/
+COPY controllers/ controllers/
 
 # Build
 ENV CGO_ENABLED=0
