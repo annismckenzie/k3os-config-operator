@@ -1,5 +1,6 @@
 domain: operators.annismckenzie.github.com
 layout: go.kubebuilder.io/v2
+multigroup: true
 projectName: k3os-config-operator
 repo: github.com/annismckenzie/k3os-config-operator
 version: 3-alpha
