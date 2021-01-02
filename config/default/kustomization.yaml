@@ -9,8 +9,8 @@ namespace: k3os-config-operator-system
 namePrefix: k3os-config-operator-
 
 # Labels to add to all resources and selectors.
-#commonLabels:
-#  someName: someValue
+commonLabels:
+  app: k3os-config-operator
 
 bases:
 - ../crd
