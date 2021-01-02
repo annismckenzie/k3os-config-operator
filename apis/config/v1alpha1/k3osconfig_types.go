@@ -28,23 +28,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // K3OSConfigSpec defines the desired state of K3OSConfig
 type K3OSConfigSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// SyncNodeLabels enables syncing node labels set in the K3OS config.yaml.
+	// K3OS by default only sets labels on nodes on first boot.
+	SyncNodeLabels bool `json:"syncNodeLabels,omitempty"`
 
-	// Foo is an example field of K3OSConfig. Edit K3OSConfig_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// SyncNodeTaints enables syncing node taints set in the K3OS config.yaml.
+	// K3OS by default only sets taints on nodes on first boot.
+	SyncNodeTaints bool `json:"syncNodeTaints,omitempty"`
 }
 
 // K3OSConfigStatus defines the observed state of K3OSConfig
-type K3OSConfigStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
+type K3OSConfigStatus struct{}
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status

@@ -3,5 +3,5 @@ kind: K3OSConfig
 metadata:
   name: k3osconfig-sample
 spec:
-  # Add fields here
-  foo: bar
+  syncNodeLabels: true
+  syncNodeTaints: false
