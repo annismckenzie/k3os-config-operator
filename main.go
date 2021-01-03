@@ -75,12 +75,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&configcontroller.K3OSConfigReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("K3OSConfig"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "K3OSConfig")
+	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManagerAsLeader(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "K3OSConfig", "leader", true)
+		os.Exit(1)
+	}
+	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "K3OSConfig", "leader", false)
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

@@ -26,6 +26,7 @@ package controllers
 
 import (
 	"context"
+	"os"
 	"time"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
@@ -36,6 +37,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
 // response is a helper struct to cut down on the amount of if and switch statements.
@@ -46,10 +48,10 @@ type response struct {
 
 // K3OSConfigReconciler reconciles a K3OSConfig object.
 type K3OSConfigReconciler struct {
-	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
-
+	client                 client.Client
+	logger                 logr.Logger
+	scheme                 *runtime.Scheme
+	leader                 bool
 	defaultRequeueResponse ctrl.Result
 }
 
@@ -62,18 +64,18 @@ func (r *K3OSConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 	config, response, err := r.fetchK3OSConfig(ctx, req.NamespacedName)
 	if err != nil {
-		r.Log.Error(err, "failed to fetch K3OSConfig")
+		r.logger.Error(err, "failed to fetch K3OSConfig")
 		return response.result, response.err
 	}
 
-	r.Log.Info("successfully fetched K3OSConfig", "spec", config.Spec)
+	r.logger.Info("successfully fetched K3OSConfig", "spec", config.Spec)
 
 	return r.defaultRequeueResponse, nil
 }
 
 func (r *K3OSConfigReconciler) fetchK3OSConfig(ctx context.Context, name types.NamespacedName) (*configv1alpha1.K3OSConfig, *response, error) {
 	config := &configv1alpha1.K3OSConfig{}
-	if err := r.Client.Get(ctx, name, config); err != nil {
+	if err := r.client.Get(ctx, name, config); err != nil {
 		if errors.IsNotFound(err) { // request object not found, could have been deleted after reconcile request, return and don't requeue
 			return nil, &response{result: ctrl.Result{}, err: nil}, err
 		}
@@ -82,11 +84,43 @@ func (r *K3OSConfigReconciler) fetchK3OSConfig(ctx context.Context, name types.N
 	return config.DeepCopy(), nil, nil
 }
 
-// SetupWithManager is called in main to setup the K3OSConfig reconiler with the manager.
+// SetupWithManager is called in main to setup the K3OSConfig reconiler with the manager as a non-leader.
 func (r *K3OSConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.defaultRequeueResponse = ctrl.Result{RequeueAfter: time.Second * 30}
 
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&configv1alpha1.K3OSConfig{}).
-		Complete(r)
+	// cannot inject via inject.LoggerInto because `leader` field isn't set at that point
+	r.logger = mgr.GetLogger().
+		WithName("controllers").
+		WithName("K3OSConfig").
+		WithValues("podName", os.Getenv("HOSTNAME"), "leader", r.leader)
+
+	return ctrl.NewControllerManagedBy(mgr).For(&configv1alpha1.K3OSConfig{}).Complete(r)
+}
+
+// SetupWithManagerAsLeader is called in main to setup the K3OSConfig reconiler with the manager as a leader.
+func (r *K3OSConfigReconciler) SetupWithManagerAsLeader(mgr ctrl.Manager) error {
+	r.leader = true
+
+	return r.SetupWithManager(mgr)
+}
+
+// NeedLeaderElection satisfies manager.LeaderElectionRunnable interface.
+func (r *K3OSConfigReconciler) NeedLeaderElection() bool {
+	return r.leader
+}
+
+// Interface implementations for dependency injection
+var _ inject.Client = (*K3OSConfigReconciler)(nil)
+var _ inject.Scheme = (*K3OSConfigReconciler)(nil)
+
+// InjectClient satisfies the inject.Client interface.
+func (r *K3OSConfigReconciler) InjectClient(client client.Client) error {
+	r.client = client
+	return nil
+}
+
+// InjectScheme satisfies the inject.Scheme interface.
+func (r *K3OSConfigReconciler) InjectScheme(scheme *runtime.Scheme) error {
+	r.scheme = scheme
+	return nil
 }
