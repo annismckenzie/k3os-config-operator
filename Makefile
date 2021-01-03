@@ -1,8 +1,8 @@
+IMAGE ?= controller:latest
+PUSH_IMAGE ?= false
+PLATFORM ?= linux/amd64,linux/arm64
 
-# Image URL to use all building/pushing image targets
-IMG ?= controller:latest
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
+CRD_OPTIONS ?= "crd:trivialVersions=false"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -34,9 +34,12 @@ uninstall: manifests kustomize
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests kustomize
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+dev: manifests tools
+	PLATFORM=linux/arm64 $(SKAFFOLD) run -p dev --tail
+	@ $(SKAFFOLD) delete -p dev
+
+deploy: manifests tools
+	$(SKAFFOLD) run -p production
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
@@ -56,11 +59,7 @@ generate: controller-gen
 
 # Build the docker image
 docker-build: test
-	docker build . -t ${IMG}
-
-# Push the docker image
-docker-push:
-	docker push ${IMG}
+	docker buildx build . -t ${IMAGE} --platform ${PLATFORM} --push=${PUSH_IMAGE}
 
 # find or download controller-gen
 # download controller-gen if necessary
@@ -71,7 +70,7 @@ ifeq (, $(shell which controller-gen))
 	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
 	cd $$CONTROLLER_GEN_TMP_DIR ;\
 	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0 ;\
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 ;\
 	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
@@ -93,3 +92,20 @@ KUSTOMIZE=$(GOBIN)/kustomize
 else
 KUSTOMIZE=$(shell which kustomize)
 endif
+
+skaffold:
+ifeq (, $(shell which skaffold))
+	@{ \
+	set -e ;\
+	SKAFFOLD_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$SKAFFOLD_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get github.com/GoogleContainerTools/skaffold/cmd/skaffold@v1.17.2 ;\
+	rm -rf $$SKAFFOLD_GEN_TMP_DIR ;\
+	}
+SKAFFOLD=$(GOBIN)/skaffold
+else
+SKAFFOLD=$(shell which skaffold)
+endif
+
+tools: kustomize skaffold

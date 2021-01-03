@@ -1,0 +1,31 @@
+apiVersion: skaffold/v2beta10
+kind: Config
+metadata:
+  name: k3os-config-operator
+build:
+  local:
+    push: false
+  artifacts:
+    - image: ghcr.io/annismckenzie/k3os-config-operator
+      custom:
+        buildCommand: make docker-build
+deploy:
+  kustomize:
+    paths:
+      - config/crd
+      - config/default
+profiles:
+  - name: production
+    build:
+      tagPolicy:
+        gitCommit: {}
+      local:
+        push: true
+  - name: dev
+    build:
+      tagPolicy:
+        gitCommit:
+          variant: AbbrevTreeSha
+          prefix: dev-
+      local:
+        push: true

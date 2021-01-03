@@ -1,28 +1,29 @@
-# Build the manager binary
-FROM golang:1.15 as builder
+# syntax=docker/dockerfile:1-experimental
 
-ENV GOOS=linux
-
-ARG GOARCH=arm64
-ENV GOARCH=${GOARCH}
+FROM --platform=${BUILDPLATFORM} golang:1.15-alpine AS base
 
 WORKDIR /workspace
+ENV CGO_ENABLED=0
+
 # Copy the Go Modules manifests
-COPY go.mod go.mod
-COPY go.sum go.sum
+COPY go.* .
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
+FROM base AS builder
+ARG TARGETOS
+ARG TARGETARCH
+
 # Copy the go source
 COPY main.go main.go
-# COPY apis/ apis/
-# COPY controllers/ controllers/
+COPY apis/ apis/
+COPY controllers/ controllers/
 
 # Build
-ENV CGO_ENABLED=0
 ENV GO111MODULE=on
-RUN go build -a -o manager main.go
+RUN --mount=type=cache,target=/root/.cache/go-build \
+  GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -a -o manager main.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details

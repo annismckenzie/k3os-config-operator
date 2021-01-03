@@ -6,7 +6,7 @@ metadata:
   name: system
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: controller-manager
   namespace: system
@@ -16,7 +16,6 @@ spec:
   selector:
     matchLabels:
       control-plane: controller-manager
-  replicas: 1
   template:
     metadata:
       labels:
@@ -27,8 +26,13 @@ spec:
         - /manager
         args:
         - --enable-leader-election
-        image: controller:latest
+        image: ghcr.io/annismckenzie/k3os-config-operator
         name: manager
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         resources:
           limits:
             cpu: 100m
