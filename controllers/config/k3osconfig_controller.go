@@ -60,18 +60,23 @@ func (r *K3OSConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 	switch r.leader {
 	case true: // this instance of the operator won the leader election and can update the K3OSConfig CR
-		return r.handleK3OSConfigAsLeader(ctx, config)
+		response, err = r.handleK3OSConfigAsLeader(ctx, config)
 	default: // handle k3os config file
-		return r.handleK3OSConfig(ctx, config)
+		response, err = r.handleK3OSConfig(ctx, config)
 	}
+
+	if err != nil {
+		r.logger.Error(err, "failed to handle K3OSConfig")
+	}
+	return response.result, response.err
 }
 
-func (r *K3OSConfigReconciler) handleK3OSConfigAsLeader(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
-	return r.defaultRequeueResponse, nil
+func (r *K3OSConfigReconciler) handleK3OSConfigAsLeader(ctx context.Context, config *configv1alpha1.K3OSConfig) (*response, error) {
+	return &response{result: r.defaultRequeueResponse, err: nil}, nil
 }
 
-func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
-	return r.defaultRequeueResponse, nil
+func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (*response, error) {
+	return &response{result: r.defaultRequeueResponse, err: nil}, nil
 }
 
 func (r *K3OSConfigReconciler) fetchK3OSConfig(ctx context.Context, name types.NamespacedName) (*configv1alpha1.K3OSConfig, *response, error) {
