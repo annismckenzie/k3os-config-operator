@@ -26,7 +26,7 @@ spec:
         - /manager
         args:
         - --enable-leader-election
-        image: controller:latest
+        image: ghcr.io/annismckenzie/k3os-config-operator
         name: manager
         env:
         - name: NODE_NAME
