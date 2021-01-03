@@ -75,7 +75,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManagerAsLeader(mgr); err != nil {
+	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(mgr, configcontroller.RequireLeaderElection()); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "K3OSConfig", "leader", true)
 		os.Exit(1)
 	}

@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
@@ -73,6 +74,19 @@ func (r *K3OSConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 	r.logger.Info("successfully fetched K3OSConfig", "spec", config.Spec)
 
+	switch r.leader {
+	case true: // this instance of the operator won the leader election and can update the K3OSConfig CR
+		return r.handleK3OSConfigAsLeader(ctx, config)
+	default: // handle k3os config file
+		return r.handleK3OSConfig(ctx, config)
+	}
+}
+
+func (r *K3OSConfigReconciler) handleK3OSConfigAsLeader(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
+	return r.defaultRequeueResponse, nil
+}
+
+func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
 	return r.defaultRequeueResponse, nil
 }
 
@@ -87,9 +101,50 @@ func (r *K3OSConfigReconciler) fetchK3OSConfig(ctx context.Context, name types.N
 	return config.DeepCopy(), nil, nil
 }
 
+// Option denotes an option for configuring this controller.
+type Option interface{}
+
+type requireLeaderElectionOpt struct {
+	requireLeaderElection bool
+}
+
+// RequireLeaderElection returns an option that requires the operator being the leader to run this controller instance.
+func RequireLeaderElection() Option {
+	return &requireLeaderElectionOpt{}
+}
+
+// https://github.com/kubernetes-sigs/controller-runtime/pull/921#issuecomment-662187521 doesn't work
+// but there's always another way. 🥁 🥁 🥁
+type nonLeaderLeaseNeedingManagerWrapper struct {
+	manager.Manager
+}
+
+func (w *nonLeaderLeaseNeedingManagerWrapper) Add(r manager.Runnable) error {
+	return w.Manager.Add(&nonLeaderLeaseNeedingRunnableWrapper{Runnable: r})
+}
+
+type nonLeaderLeaseNeedingRunnableWrapper struct {
+	manager.Runnable
+}
+
+// NeedLeaderElection satisfies manager.LeaderElectionRunnable interface.
+func (w *nonLeaderLeaseNeedingRunnableWrapper) NeedLeaderElection() bool {
+	return false
+}
+
 // SetupWithManager is called in main to setup the K3OSConfig reconiler with the manager as a non-leader.
-func (r *K3OSConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *K3OSConfigReconciler) SetupWithManager(mgr ctrl.Manager, options ...Option) error {
 	r.defaultRequeueResponse = ctrl.Result{RequeueAfter: time.Second * 30}
+
+	for _, option := range options {
+		if _, ok := option.(*requireLeaderElectionOpt); ok {
+			r.leader = true
+		}
+	}
+
+	if !r.leader { // wrap manager so this can run without a leader lease
+		mgr = &nonLeaderLeaseNeedingManagerWrapper{Manager: mgr}
+	}
 
 	// cannot inject via inject.LoggerInto because `leader` field isn't set at that point
 	r.logger = mgr.GetLogger().
@@ -98,18 +153,6 @@ func (r *K3OSConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		WithValues("podName", os.Getenv("HOSTNAME"), "leader", r.leader)
 
 	return ctrl.NewControllerManagedBy(mgr).For(&configv1alpha1.K3OSConfig{}).Complete(r)
-}
-
-// SetupWithManagerAsLeader is called in main to setup the K3OSConfig reconiler with the manager as a leader.
-func (r *K3OSConfigReconciler) SetupWithManagerAsLeader(mgr ctrl.Manager) error {
-	r.leader = true
-
-	return r.SetupWithManager(mgr)
-}
-
-// NeedLeaderElection satisfies manager.LeaderElectionRunnable interface.
-func (r *K3OSConfigReconciler) NeedLeaderElection() bool {
-	return r.leader
 }
 
 // Interface implementations for dependency injection
