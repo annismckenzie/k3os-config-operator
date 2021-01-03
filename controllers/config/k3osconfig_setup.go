@@ -29,8 +29,10 @@ import (
 	"time"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
+	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
+	listersv1 "k8s.io/client-go/listers/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -44,6 +46,7 @@ type K3OSConfigReconciler struct {
 	scheme                 *runtime.Scheme
 	leader                 bool
 	defaultRequeueResponse ctrl.Result
+	nodeLister             listersv1.NodeLister
 }
 
 // Option denotes an option for configuring this controller.
@@ -80,6 +83,7 @@ func (w *nonLeaderLeaseNeedingRunnableWrapper) NeedLeaderElection() bool {
 // SetupWithManager is called in main to setup the K3OSConfig reconiler with the manager as a non-leader.
 func (r *K3OSConfigReconciler) SetupWithManager(mgr ctrl.Manager, options ...Option) error {
 	r.defaultRequeueResponse = ctrl.Result{RequeueAfter: time.Second * 30}
+	r.nodeLister = nodes.NewNodeLister()
 
 	for _, option := range options {
 		if _, ok := option.(*requireLeaderElectionOpt); ok {
