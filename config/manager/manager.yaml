@@ -28,6 +28,11 @@ spec:
         - --enable-leader-election
         image: controller:latest
         name: manager
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         resources:
           limits:
             cpu: 100m
