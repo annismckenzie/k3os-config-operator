@@ -58,6 +58,9 @@ type K3OSConfigReconciler struct {
 // +kubebuilder:rbac:groups=config.operators.annismckenzie.github.com,resources=k3osconfigs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=config.operators.annismckenzie.github.com,resources=k3osconfigs/status,verbs=get;update;patch
 
+// allow operator to update Node objects (the verbs deliberately do not include create and delete)
+// +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;update;patch
+
 // Reconcile handles K3OSConfig CRs.
 func (r *K3OSConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
