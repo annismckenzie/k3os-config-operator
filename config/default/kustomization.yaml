@@ -11,6 +11,7 @@ namePrefix: k3os-config-operator-
 # Labels to add to all resources and selectors.
 commonLabels:
   app: k3os-config-operator
+  app.kubernetes.io/name: k3os-config-operator
 
 bases:
 - ../crd
