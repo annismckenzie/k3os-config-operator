@@ -3,7 +3,7 @@ name: ci
 on: push
 
 jobs:
-  multi-registries:
+  build-push-image:
     runs-on: ubuntu-latest
     steps:
       -
