@@ -1,5 +1,6 @@
 IMAGE ?= controller:latest
 PUSH_IMAGE ?= false
+PLATFORM ?= linux/amd64,linux/arm64
 
 CRD_OPTIONS ?= "crd:trivialVersions=false"
 
@@ -34,7 +35,8 @@ uninstall: manifests kustomize
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 dev: manifests tools
-	$(SKAFFOLD) dev -p dev --tail
+	PLATFORM=linux/arm64 $(SKAFFOLD) run -p dev --tail
+	@ $(SKAFFOLD) delete -p dev
 
 deploy: manifests tools
 	$(SKAFFOLD) run -p production
@@ -57,7 +59,7 @@ generate: controller-gen
 
 # Build the docker image
 docker-build: test
-	docker buildx build . -t ${IMAGE} --platform linux/amd64,linux/arm64 --push=${PUSH_IMAGE}
+	docker buildx build . -t ${IMAGE} --platform ${PLATFORM} --push=${PUSH_IMAGE}
 
 # find or download controller-gen
 # download controller-gen if necessary
