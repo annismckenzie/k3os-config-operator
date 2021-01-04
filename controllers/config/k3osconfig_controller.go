@@ -26,12 +26,33 @@ package config
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"os"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+)
+
+const (
+	k3osNodesSecretName = "k3os-nodes"
+	nodeNameEnvName     = "NODE_NAME" // see config/manager/manager.yaml
+)
+
+var errSkipUpdate = errors.New("no updates required, skip")
+
+var (
+	annotationPrefix = "k3osconfigs." + configv1alpha1.GroupVersion.Group
+
+	// addedLabelsNodeAnnotation is the annotation where labels that the operator added are kept
+	addedLabelsNodeAnnotation = annotationPrefix + "/labelsAdded"
+	// addedTaintsNodeAnnotation is the annotation where taints that the operator added are kept
+	addedTaintsNodeAnnotation = annotationPrefix + "/taintsAdded"
 )
 
 // response is a helper struct to cut down on the amount of if and switch statements.
@@ -80,13 +101,112 @@ func (r *K3OSConfigReconciler) handleK3OSConfigAsLeader(ctx context.Context, con
 }
 
 func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (*response, error) {
+	// 1. get node name we're running on from the environment
+	nodeName := os.Getenv(nodeNameEnvName)
+	if nodeName == "" {
+		err := fmt.Errorf("failed to find node name in %q environment variable", nodeNameEnvName)
+		return &response{result: r.defaultRequeueResponse, err: nil}, err
+	}
+
+	// 2. fetch secret with node configs
+	secret, err := r.clientset.CoreV1().Secrets(config.GetNamespace()).Get(ctx, k3osNodesSecretName, metav1.GetOptions{})
+	if err != nil {
+		return &response{result: r.defaultRequeueResponse, err: nil}, err
+	}
+
+	// 3. get node config
+	nodeConfigBytes, ok := secret.Data[nodeName]
+	if !ok {
+		err = fmt.Errorf("failed to find node %q in config (keys: %v)", nodeName, secretKeys(secret))
+		return &response{result: r.defaultRequeueResponse, err: nil}, err
+	}
+	nodeConfig := string(nodeConfigBytes)
+	// TODO: parse node config YAML into a map[string]interface{} (?)
+	r.logger.Info("successfully fetched config of node")
+
+	node, err := r.nodeLister.Get(nodeName)
+	if err != nil {
+		return &response{result: r.defaultRequeueResponse, err: nil}, err
+	}
+
+	var updateNode bool
+
+	// 4. sync node labels
+	if config.Spec.SyncNodeLabels {
+		if err = syncNodeLabels(node, map[string]string{}); err == nil { // FIXME: this does nothing for now
+			updateNode = true
+		} else if err != errSkipUpdate { // error is non-nil but it's not the one telling us to skip the update, bail
+			return &response{result: r.defaultRequeueResponse, err: nil}, err
+		}
+	}
+
+	// 5. sync node taints
+	if config.Spec.SyncNodeTaints {
+		if err = syncNodeTaints(node, map[string]string{}); err == nil { // FIXME: this does nothing for now
+			updateNode = true
+		} else if err != errSkipUpdate { // error is non-nil but it's not the one telling us to skip the update, bail
+			return &response{result: r.defaultRequeueResponse, err: nil}, err
+		}
+	}
+
+	if updateNode {
+		r.logger.Info("updating node", "labels", node.GetLabels(), "addedLabels", node.GetAnnotations()[addedLabelsNodeAnnotation], "addedTaints", node.GetAnnotations()[addedTaintsNodeAnnotation])
+		if _, err = r.clientset.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{}); err != nil { // FIXME: switch to a better way that tries a couple times!
+			return &response{result: r.defaultRequeueResponse, err: nil}, err
+		}
+	}
+
 	return &response{result: r.defaultRequeueResponse, err: nil}, nil
+}
+
+// syncNodeLabels syncs node labels between the existing set of labels and the ones given in the configuration.
+// This method returns errSkipUpdate if no updates should be done.
+func syncNodeLabels(node *corev1.Node, configNodeLabels map[string]string) error {
+	//nodeLabels := node.GetLabels()
+
+	// put added labels (as a slice) into the annotation addedLabelsNodeAnnotation
+
+	// FIXME: if we added some labels before and they were removed from the configuration then we wouldn't delete them from the node labels ever
+	// that needs to be fixed
+	if len(configNodeLabels) == 0 {
+		return errSkipUpdate
+	}
+
+	// check node labels
+
+	return errSkipUpdate
+}
+
+// syncNodeTaints syncs node taints between the existing set of taints and the ones given in the configuration.
+// This method returns errSkipUpdate if no updates should be done.
+func syncNodeTaints(node *corev1.Node, configNodeTaints map[string]string) error {
+	//nodeTaints := node.Spec.Taints
+
+	// put added taints (as a slice) into the annotation addedTaintsNodeAnnotation
+
+	// FIXME: if we added some taints before and they were dropped from the configuration then we wouldn't delete them from the node taints ever
+	// that needs to be fixed
+	if len(configNodeTaints) == 0 {
+		return errSkipUpdate
+	}
+
+	// check node taints
+
+	return errSkipUpdate
+}
+
+func secretKeys(secret *corev1.Secret) []string {
+	keys := make([]string, 0, len(secret.Data))
+	for key := range secret.Data {
+		keys = append(keys, key)
+	}
+	return keys
 }
 
 func (r *K3OSConfigReconciler) fetchK3OSConfig(ctx context.Context, name types.NamespacedName) (*configv1alpha1.K3OSConfig, *response, error) {
 	config := &configv1alpha1.K3OSConfig{}
 	if err := r.client.Get(ctx, name, config); err != nil {
-		if errors.IsNotFound(err) { // request object not found, could have been deleted after reconcile request, return and don't requeue
+		if apierrors.IsNotFound(err) { // request object not found, could have been deleted after reconcile request, return and don't requeue
 			return nil, &response{result: ctrl.Result{}, err: nil}, err
 		}
 		return nil, &response{result: r.defaultRequeueResponse, err: nil}, err

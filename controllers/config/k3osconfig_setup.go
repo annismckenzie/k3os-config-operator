@@ -109,7 +109,10 @@ func (r *K3OSConfigReconciler) SetupWithManager(mgr ctrl.Manager, options ...Opt
 		WithName("K3OSConfig").
 		WithValues("podName", os.Getenv("HOSTNAME"), "leader", r.leader)
 
-	return ctrl.NewControllerManagedBy(mgr).For(&configv1alpha1.K3OSConfig{}).Complete(r)
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&configv1alpha1.K3OSConfig{}).
+		//Watches()  // TODO: can I watch a secret named k3os-nodes with this? That'd be rad.
+		Complete(r)
 }
 
 // Interface implementations for dependency injection
