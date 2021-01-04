@@ -36,6 +36,8 @@ uninstall: manifests kustomize
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 dev: manifests tools
 	PLATFORM=linux/arm64 $(SKAFFOLD) run -p dev --tail
+
+dev-delete: tools
 	@ $(SKAFFOLD) delete -p dev
 
 deploy: manifests tools
