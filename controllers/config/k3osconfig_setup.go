@@ -32,6 +32,7 @@ import (
 	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	listersv1 "k8s.io/client-go/listers/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,6 +43,7 @@ import (
 // K3OSConfigReconciler reconciles a K3OSConfig object.
 type K3OSConfigReconciler struct {
 	client                 client.Client
+	clientset              *kubernetes.Clientset
 	logger                 logr.Logger
 	scheme                 *runtime.Scheme
 	leader                 bool
@@ -84,6 +86,12 @@ func (w *nonLeaderLeaseNeedingRunnableWrapper) NeedLeaderElection() bool {
 func (r *K3OSConfigReconciler) SetupWithManager(mgr ctrl.Manager, options ...Option) error {
 	r.defaultRequeueResponse = ctrl.Result{RequeueAfter: time.Second * 30}
 	r.nodeLister = nodes.NewNodeLister()
+
+	clientset, err := kubernetes.NewForConfig(mgr.GetConfig())
+	if err != nil {
+		return err
+	}
+	r.clientset = clientset
 
 	for _, option := range options {
 		if _, ok := option.(*requireLeaderElectionOpt); ok {
