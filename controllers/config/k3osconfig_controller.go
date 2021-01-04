@@ -43,6 +43,9 @@ type response struct {
 // +kubebuilder:rbac:groups=config.operators.annismckenzie.github.com,resources=k3osconfigs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=config.operators.annismckenzie.github.com,resources=k3osconfigs/status,verbs=get;update;patch
 
+// allow operator to get and watch Secret objects in its namespace
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;watch,namespace=k3os-config-operator-system
+
 // allow operator to update Node objects (the verbs deliberately do not include create and delete)
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;update;patch
 
