@@ -73,7 +73,7 @@ func main() {
 		LeaderElectionID:   "8a68cfa7.operators.annismckenzie.github.com",
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		setupLog.Error(err, "unable to create manager")
 		os.Exit(1)
 	}
 
