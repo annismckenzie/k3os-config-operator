@@ -102,6 +102,8 @@ func (r *K3OSConfigReconciler) handleK3OSConfigAsLeader(ctx context.Context, con
 }
 
 type nodeConfig struct {
+	Hostname string `yaml:"hostname"`
+
 	K3OS struct {
 		Labels map[string]string `yaml:"labels"`
 		Taints []string          `yaml:"taints"`
