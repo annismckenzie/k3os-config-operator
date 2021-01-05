@@ -30,8 +30,8 @@ import (
 	"os"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
-	"gopkg.in/yaml.v3"
 	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
+	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,15 +99,6 @@ func (r *K3OSConfigReconciler) handleK3OSConfigAsLeader(ctx context.Context, con
 	return &response{result: r.defaultRequeueResponse, err: nil}, nil
 }
 
-type nodeConfig struct {
-	Hostname string `yaml:"hostname"`
-
-	K3OS struct {
-		Labels map[string]string `yaml:"labels"`
-		Taints []string          `yaml:"taints"`
-	} `yaml:"k3os"`
-}
-
 func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (*response, error) {
 	// 1. get node name we're running on from the environment
 	nodeName := os.Getenv(nodeNameEnvName)
@@ -128,11 +119,11 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 		err = fmt.Errorf("failed to find node %q in config (keys: %v)", nodeName, secretKeys(secret))
 		return &response{result: r.defaultRequeueResponse, err: nil}, err
 	}
-	nc := &nodeConfig{}
-	if err := yaml.Unmarshal(nodeConfigBytes, nc); err != nil {
-		return &response{result: r.defaultRequeueResponse, err: nil}, fmt.Errorf("failed to unmarshal YAML node config: %w", err)
+	nodeConfig, err := nodes.ParseNodeConfig(nodeConfigBytes)
+	if err != nil {
+		return &response{result: r.defaultRequeueResponse, err: nil}, err
 	}
-	r.logger.Info("successfully fetched config of node", "config", nc)
+	r.logger.Info("successfully fetched config of node", "config", nodeConfig)
 
 	node, err := r.nodeLister.Get(nodeName)
 	if err != nil {
