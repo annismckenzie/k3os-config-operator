@@ -43,6 +43,11 @@ dev-delete: tools
 deploy: manifests tools
 	$(SKAFFOLD) run -p production
 
+# This is used to update the manifests into deploy/operator.yaml
+render-production-manifests:
+	@ $(SKAFFOLD) build -q -p production
+	@ $(KUSTOMIZE) build config/production > deploy/operator.yaml
+
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
