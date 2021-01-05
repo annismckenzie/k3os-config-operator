@@ -26,12 +26,12 @@ package config
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
 	"gopkg.in/yaml.v3"
+	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,8 +44,6 @@ const (
 	nodeConfigSecretName = "k3os-nodes"
 	nodeNameEnvName      = "NODE_NAME" // see config/manager/manager.yaml
 )
-
-var errSkipUpdate = errors.New("no updates required, skip")
 
 var (
 	annotationPrefix = "k3osconfigs." + configv1alpha1.GroupVersion.Group
@@ -147,7 +145,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	if config.Spec.SyncNodeLabels {
 		if err = syncNodeLabels(node, map[string]string{}); err == nil { // FIXME: this does nothing for now
 			updateNode = true
-		} else if err != errSkipUpdate { // error is non-nil but it's not the one telling us to skip the update, bail
+		} else if !errors.Is(err, errors.ErrSkipUpdate) { // error is non-nil but it's not the one telling us to skip the update, bail
 			return &response{result: r.defaultRequeueResponse, err: nil}, err
 		}
 	}
@@ -156,7 +154,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	if config.Spec.SyncNodeTaints {
 		if err = syncNodeTaints(node, map[string]string{}); err == nil { // FIXME: this does nothing for now
 			updateNode = true
-		} else if err != errSkipUpdate { // error is non-nil but it's not the one telling us to skip the update, bail
+		} else if !errors.Is(err, errors.ErrSkipUpdate) { // error is non-nil but it's not the one telling us to skip the update, bail
 			return &response{result: r.defaultRequeueResponse, err: nil}, err
 		}
 	}
@@ -181,12 +179,12 @@ func syncNodeLabels(node *corev1.Node, configNodeLabels map[string]string) error
 	// FIXME: if we added some labels before and they were removed from the configuration then we wouldn't delete them from the node labels ever
 	// that needs to be fixed
 	if len(configNodeLabels) == 0 {
-		return errSkipUpdate
+		return errors.ErrSkipUpdate
 	}
 
 	// check node labels
 
-	return errSkipUpdate
+	return errors.ErrSkipUpdate
 }
 
 // syncNodeTaints syncs node taints between the existing set of taints and the ones given in the configuration.
@@ -199,12 +197,12 @@ func syncNodeTaints(node *corev1.Node, configNodeTaints map[string]string) error
 	// FIXME: if we added some taints before and they were dropped from the configuration then we wouldn't delete them from the node taints ever
 	// that needs to be fixed
 	if len(configNodeTaints) == 0 {
-		return errSkipUpdate
+		return errors.ErrSkipUpdate
 	}
 
 	// check node taints
 
-	return errSkipUpdate
+	return errors.ErrSkipUpdate
 }
 
 func secretKeys(secret *corev1.Secret) []string {
