@@ -20,6 +20,15 @@ profiles:
       kustomize:
         paths:
           - config/default
+  - name: tools
+    build:
+      local:
+        push: true
+      artifacts:
+        - image: ghcr.io/annismckenzie/k3os-config-operator/tools
+          custom:
+            buildCommand: "TOOLS_IMAGE=${IMAGE} make docker-build-tools"
+    deploy: {}
   - name: dev
     build:
       artifacts:
