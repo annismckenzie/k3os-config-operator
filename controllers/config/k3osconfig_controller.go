@@ -30,6 +30,7 @@ import (
 	"os"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
+	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
 	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
 	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
 	corev1 "k8s.io/api/core/v1"
@@ -43,15 +44,6 @@ import (
 const (
 	nodeConfigSecretName = "k3os-nodes"
 	nodeNameEnvName      = "NODE_NAME" // see config/manager/manager.yaml
-)
-
-var (
-	annotationPrefix = "k3osconfigs." + configv1alpha1.GroupVersion.Group
-
-	// addedLabelsNodeAnnotation is the annotation where labels that the operator added are kept
-	addedLabelsNodeAnnotation = annotationPrefix + "/labelsAdded"
-	// addedTaintsNodeAnnotation is the annotation where taints that the operator added are kept
-	addedTaintsNodeAnnotation = annotationPrefix + "/taintsAdded"
 )
 
 // response is a helper struct to cut down on the amount of if and switch statements.
@@ -151,7 +143,8 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	}
 
 	if updateNode {
-		r.logger.Info("updating node", "labels", node.GetLabels(), "addedLabels", node.GetAnnotations()[addedLabelsNodeAnnotation], "addedTaints", node.GetAnnotations()[addedTaintsNodeAnnotation])
+		r.logger.Info("updating node", "labels", node.GetLabels(), "addedLabels", node.GetAnnotations()[consts.GetAddedLabelsNodeAnnotation()], "addedTaints", node.GetAnnotations()[consts.GetAddedTaintsNodeAnnotation()])
+		// move out into updateNode so it's testable
 		if _, err = r.clientset.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{}); err != nil { // FIXME: switch to a better way that tries a couple times!
 			return &response{result: r.defaultRequeueResponse, err: nil}, err
 		}
