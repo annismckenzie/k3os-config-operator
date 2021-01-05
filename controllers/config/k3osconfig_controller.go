@@ -41,8 +41,8 @@ import (
 )
 
 const (
-	k3osNodesSecretName = "k3os-nodes"
-	nodeNameEnvName     = "NODE_NAME" // see config/manager/manager.yaml
+	nodeConfigSecretName = "k3os-nodes"
+	nodeNameEnvName      = "NODE_NAME" // see config/manager/manager.yaml
 )
 
 var errSkipUpdate = errors.New("no updates required, skip")
@@ -117,7 +117,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	}
 
 	// 2. fetch secret with node configs
-	secret, err := r.clientset.CoreV1().Secrets(config.GetNamespace()).Get(ctx, k3osNodesSecretName, metav1.GetOptions{})
+	secret, err := r.clientset.CoreV1().Secrets(config.GetNamespace()).Get(ctx, nodeConfigSecretName, metav1.GetOptions{})
 	if err != nil {
 		return &response{result: r.defaultRequeueResponse, err: nil}, err
 	}
