@@ -135,11 +135,10 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	}
 
 	if updateNode {
-		r.logger.Info("updating node", "labels", node.GetLabels(), "updatedLabels", labeler.GetUpdatedLabels(), "updatedTaints", tainter.GetUpdatedTaints())
-		// move out into updateNode so it's testable
-		if _, err = r.clientset.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{}); err != nil { // FIXME: switch to a better way that tries a couple times!
+		if err = r.updateNode(ctx, node); err != nil {
 			return ctrl.Result{}, err
 		}
+		r.logger.Info("updated node", "labels", node.GetLabels(), "updatedLabels", labeler.GetUpdatedLabels(), "updatedTaints", tainter.GetUpdatedTaints())
 	}
 
 	return ctrl.Result{}, nil
@@ -164,6 +163,16 @@ func (r *K3OSConfigReconciler) getNode(ctx context.Context, nodeName string) (*c
 		return nil, err
 	}
 	return node.DeepCopy(), nil
+}
+
+func (r *K3OSConfigReconciler) updateNode(ctx context.Context, node *corev1.Node) error {
+	// TODO: switch to a better way that either implements retries or switch to patching
+	// the node (which would be faster anyways). The only fields we need to update are
+	// the labels, the taints and the annotations (for state tracking). 🤔
+	if _, err := r.clientset.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func secretKeys(secret *corev1.Secret) []string {
