@@ -82,11 +82,10 @@ func (r *K3OSConfigReconciler) handleK3OSConfigAsLeader(ctx context.Context, con
 }
 
 func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
-	// 1. get node name we're running on from the environment
-	nodeName := os.Getenv(consts.NodeNameEnvName)
+	// 1. get node name we're running
+	nodeName := consts.GetNodeName()
 	if nodeName == "" {
-		err := fmt.Errorf("failed to find node name in %q environment variable", consts.NodeNameEnvName)
-		return ctrl.Result{}, err
+		panic("Failed to find node name in environment. Did you forget to set NODE_NAME?")
 	}
 
 	// 2. fetch secret with node configs
