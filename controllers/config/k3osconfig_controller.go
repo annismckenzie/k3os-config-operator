@@ -116,7 +116,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 
 	// 4. sync node labels
 	if config.Spec.SyncNodeLabels {
-		if err = syncNodeLabels(node, map[string]string{}); err == nil { // FIXME: this does nothing for now
+		if err = nodes.NewLabeler().Reconcile(node, nodeConfig.K3OS.Labels); err == nil {
 			updateNode = true
 		} else if !errors.Is(err, errors.ErrSkipUpdate) { // error is non-nil but it's not the one telling us to skip the update, bail
 			return ctrl.Result{}, err
