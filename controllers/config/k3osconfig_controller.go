@@ -51,9 +51,7 @@ import (
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;update;patch
 
 // Reconcile handles K3OSConfig CRs.
-func (r *K3OSConfigReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
-
+func (r *K3OSConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	config := &configv1alpha1.K3OSConfig{}
 	if err := r.client.Get(ctx, req.NamespacedName, config); err != nil {
 		if apierrors.IsNotFound(err) { // request object not found, could have been deleted after reconcile request, return and don't requeue

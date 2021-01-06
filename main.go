@@ -64,7 +64,7 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
-	stopCh := ctrl.SetupSignalHandler()
+	ctx := ctrl.SetupSignalHandler()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
@@ -84,7 +84,7 @@ func main() {
 		setupLog.Error(err, "unable to build clientset")
 		os.Exit(1)
 	}
-	if err = nodes.NewNodeInformer(clientset, stopCh); err != nil {
+	if err = nodes.NewNodeInformer(ctx, clientset); err != nil {
 		setupLog.Error(err, "unable to start node informer")
 		os.Exit(1)
 	}
@@ -100,7 +100,7 @@ func main() {
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(stopCh); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
