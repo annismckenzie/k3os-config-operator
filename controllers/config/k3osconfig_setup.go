@@ -161,6 +161,8 @@ func labelSelectorPredicateForSecret() predicate.Predicate {
 	return p
 }
 
+// enqueueObjectsOnChanges is used to enqueue all K3OSConfig resources in the operator's namespace when
+// changes happen to the watched resources (secrets, nodes).
 func (r *K3OSConfigReconciler) enqueueObjectsOnChanges(object client.Object) []reconcile.Request {
 	r.logger.Info("change to a watched object noticed", "namespace/name", client.ObjectKeyFromObject(object).String())
 
