@@ -41,11 +41,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const (
-	nodeConfigSecretName = "k3os-nodes"
-	nodeNameEnvName      = "NODE_NAME" // see config/manager/manager.yaml
-)
-
 // response is a helper struct to cut down on the amount of if and switch statements.
 type response struct {
 	result reconcile.Result
@@ -93,14 +88,14 @@ func (r *K3OSConfigReconciler) handleK3OSConfigAsLeader(ctx context.Context, con
 
 func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (*response, error) {
 	// 1. get node name we're running on from the environment
-	nodeName := os.Getenv(nodeNameEnvName)
+	nodeName := os.Getenv(consts.NodeNameEnvName)
 	if nodeName == "" {
-		err := fmt.Errorf("failed to find node name in %q environment variable", nodeNameEnvName)
+		err := fmt.Errorf("failed to find node name in %q environment variable", consts.NodeNameEnvName)
 		return &response{result: r.defaultRequeueResponse, err: nil}, err
 	}
 
 	// 2. fetch secret with node configs
-	secret, err := r.clientset.CoreV1().Secrets(config.GetNamespace()).Get(ctx, nodeConfigSecretName, metav1.GetOptions{})
+	secret, err := r.clientset.CoreV1().Secrets(config.GetNamespace()).Get(ctx, consts.NodeConfigSecretName, metav1.GetOptions{})
 	if err != nil {
 		return &response{result: r.defaultRequeueResponse, err: nil}, err
 	}
