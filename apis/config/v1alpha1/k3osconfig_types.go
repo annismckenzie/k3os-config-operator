@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// K3OSConfigSpec defines the desired state of K3OSConfig
+// K3OSConfigSpec defines the desired state of K3OSConfig.
 type K3OSConfigSpec struct {
 	// SyncNodeLabels enables syncing node labels set in the K3OS config.yaml.
 	// K3OS by default only sets labels on nodes on first boot.
@@ -39,13 +39,13 @@ type K3OSConfigSpec struct {
 	SyncNodeTaints bool `json:"syncNodeTaints,omitempty"`
 }
 
-// K3OSConfigStatus defines the observed state of K3OSConfig
+// K3OSConfigStatus defines the observed state of K3OSConfig.
 type K3OSConfigStatus struct{}
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// K3OSConfig is the Schema for the k3osconfigs API
+// K3OSConfig is the Schema for the k3osconfigs API.
 type K3OSConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -56,7 +56,7 @@ type K3OSConfig struct {
 
 // +kubebuilder:object:root=true
 
-// K3OSConfigList contains a list of K3OSConfig
+// K3OSConfigList contains a list of K3OSConfig.
 type K3OSConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

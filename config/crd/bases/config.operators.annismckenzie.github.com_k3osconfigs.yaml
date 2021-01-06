@@ -19,7 +19,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: K3OSConfig is the Schema for the k3osconfigs API
+        description: K3OSConfig is the Schema for the k3osconfigs API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,7 +34,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: K3OSConfigSpec defines the desired state of K3OSConfig
+            description: K3OSConfigSpec defines the desired state of K3OSConfig.
             properties:
               syncNodeLabels:
                 description: SyncNodeLabels enables syncing node labels set in the
@@ -48,7 +48,7 @@ spec:
                 type: boolean
             type: object
           status:
-            description: K3OSConfigStatus defines the observed state of K3OSConfig
+            description: K3OSConfigStatus defines the observed state of K3OSConfig.
             type: object
         type: object
     served: true
