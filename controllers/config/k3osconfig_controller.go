@@ -122,8 +122,9 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	var updateNode bool
 
 	// 4. sync node labels
+	labeler := nodes.NewLabeler()
 	if config.Spec.SyncNodeLabels {
-		if err = nodes.NewLabeler().Reconcile(node, nodeConfig.K3OS.Labels); err == nil {
+		if err = labeler.Reconcile(node, nodeConfig.K3OS.Labels); err == nil {
 			updateNode = true
 		} else if err = resultError(err); err != nil {
 			return ctrl.Result{}, err
@@ -131,8 +132,9 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	}
 
 	// 5. sync node taints
+	tainter := nodes.NewTainter()
 	if config.Spec.SyncNodeTaints {
-		if err = syncNodeTaints(node, map[string]string{}); err == nil { // FIXME: this does nothing for now
+		if err = tainter.Reconcile(node, nodeConfig.K3OS.Taints); err == nil {
 			updateNode = true
 		} else if err = resultError(err); err != nil {
 			return ctrl.Result{}, err
@@ -140,7 +142,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	}
 
 	if updateNode {
-		r.logger.Info("updating node", "labels", node.GetLabels(), "addedLabels", node.GetAnnotations()[consts.GetAddedLabelsNodeAnnotation()], "addedTaints", node.GetAnnotations()[consts.GetAddedTaintsNodeAnnotation()])
+		r.logger.Info("updating node", "labels", node.GetLabels(), "updatedLabels", labeler.GetUpdatedLabels(), "updatedTaints", tainter.GetUpdatedTaints())
 		// move out into updateNode so it's testable
 		if _, err = r.clientset.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{}); err != nil { // FIXME: switch to a better way that tries a couple times!
 			return ctrl.Result{}, err
