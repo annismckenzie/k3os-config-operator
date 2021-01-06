@@ -58,9 +58,7 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
+	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false, "Enable leader election for controller manager.")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
@@ -94,11 +92,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(mgr, configcontroller.RequireLeaderElection()); err != nil {
+	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(ctx, mgr, configcontroller.RequireLeaderElection()); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "K3OSConfig", "leader", true)
 		os.Exit(1)
 	}
-	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(mgr); err != nil {
+	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "K3OSConfig", "leader", false)
 		os.Exit(1)
 	}
