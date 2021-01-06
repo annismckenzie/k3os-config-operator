@@ -48,6 +48,7 @@ func (l *labeler) Reconcile(node *corev1.Node, configNodeLabels map[string]strin
 	for addedLabel := range addedLabelsMap {
 		if _, ok := configNodeLabels[addedLabel]; !ok { // a label that we added was removed, drop it
 			delete(nodeLabels, addedLabel)
+			delete(addedLabelsMap, addedLabel)
 			update = true
 			l.updatedLabels[addedLabel] = "(removed)"
 		}
@@ -77,6 +78,10 @@ func (l *labeler) GetUpdatedLabels() map[string]string {
 }
 
 func getAddedLabels(node *corev1.Node) map[string]struct{} {
+	if node == nil {
+		return nil
+	}
+
 	addedLabelsMap := map[string]struct{}{}
 	if addedLabelsAnnotation := node.GetAnnotations()[consts.GetAddedLabelsNodeAnnotation()]; addedLabelsAnnotation != "" {
 		for _, addedLabel := range strings.Split(addedLabelsAnnotation, internalConsts.NodeAnnotationValueSeperator) {

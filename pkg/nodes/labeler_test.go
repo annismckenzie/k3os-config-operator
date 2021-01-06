@@ -1,9 +1,12 @@
 package nodes
 
 import (
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
+	internalConsts "github.com/annismckenzie/k3os-config-operator/pkg/internal/consts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -36,12 +39,13 @@ func Test_labeler_Reconcile(t *testing.T) {
 		configNodeLabels map[string]string
 	}
 	tests := []struct {
-		name           string
-		l              *labeler
-		args           args
-		wantErr        error
-		expectedLabels map[string]string
-		updatedLabels  map[string]string
+		name                          string
+		l                             *labeler
+		args                          args
+		wantErr                       error
+		expectedLabels                map[string]string
+		updatedLabels                 map[string]string
+		expectedAddedLabelsAnnotation string
 	}{
 		{
 			name:    "passing a nil Node object",
@@ -80,6 +84,7 @@ func Test_labeler_Reconcile(t *testing.T) {
 				"someNewLabel": "value",
 				"another":      "anotherValue",
 			},
+			expectedAddedLabelsAnnotation: "another,someNewLabel",
 		},
 		{
 			name: "Node has existing labels and we add some labels",
@@ -99,6 +104,7 @@ func Test_labeler_Reconcile(t *testing.T) {
 			updatedLabels: map[string]string{
 				"someNewLabel": "value",
 			},
+			expectedAddedLabelsAnnotation: "someNewLabel",
 		},
 		{
 			name: "Node has existing labels and we add and update some labels",
@@ -120,6 +126,7 @@ func Test_labeler_Reconcile(t *testing.T) {
 				"someNewLabel":      "value",
 				"someExistingLabel": "newValue",
 			},
+			expectedAddedLabelsAnnotation: "someExistingLabel,someNewLabel",
 		},
 		{
 			name: "Node has existing labels that we added and we remove them",
@@ -135,6 +142,7 @@ func Test_labeler_Reconcile(t *testing.T) {
 			updatedLabels: map[string]string{
 				"someExistingLabel": "(removed)",
 			},
+			expectedAddedLabelsAnnotation: "",
 		},
 	}
 	for _, tt := range tests {
@@ -160,6 +168,16 @@ func Test_labeler_Reconcile(t *testing.T) {
 			if len(tt.updatedLabels) != len(updatedLabels) {
 				t.Errorf("labeler.GetUpdatedLabels() expected updated labels = %v (len: %d), got %v (len: %d)",
 					tt.updatedLabels, len(tt.updatedLabels), updatedLabels, len(updatedLabels))
+			}
+			addedLabelsMap := getAddedLabels(tt.args.node)
+			var addedLabels []string
+			for addedLabel := range addedLabelsMap {
+				addedLabels = append(addedLabels, addedLabel)
+			}
+			sort.Strings(addedLabels)
+			addedLabelsAnnotation := strings.Join(addedLabels, internalConsts.NodeAnnotationValueSeperator)
+			if tt.expectedAddedLabelsAnnotation != addedLabelsAnnotation {
+				t.Errorf("labeler expected added labels annotation = %v, got %v", tt.expectedAddedLabelsAnnotation, addedLabelsAnnotation)
 			}
 		})
 	}
