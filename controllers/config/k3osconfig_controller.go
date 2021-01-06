@@ -27,7 +27,6 @@ package config
 import (
 	"context"
 	"fmt"
-	"os"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
 	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
@@ -36,6 +35,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	listersv1 "k8s.io/client-go/listers/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -105,25 +106,15 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 		panic("Failed to find node name in environment. Did you forget to set NODE_NAME?")
 	}
 
-	// 2. fetch secret with node configs
-	secret, err := r.clientset.CoreV1().Secrets(config.GetNamespace()).Get(ctx, consts.NodeConfigSecretName, metav1.GetOptions{})
+	// 2. get node config
+	nodeConfig, err := getNodeConfig(ctx, r.clientset, nodeName)
 	if err != nil {
 		return ctrl.Result{}, resultError(err)
 	}
+	r.logger.Info("successfully fetched node config", "config", nodeConfig)
 
-	// 3. get node config
-	nodeConfigBytes, ok := secret.Data[nodeName]
-	if !ok {
-		err = fmt.Errorf("failed to find node %q in config (keys: %v)", nodeName, secretKeys(secret))
-		return ctrl.Result{}, err
-	}
-	nodeConfig, err := nodes.ParseNodeConfig(nodeConfigBytes)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	r.logger.Info("successfully fetched config of node", "config", nodeConfig)
-
-	node, err := r.nodeLister.Get(nodeName)
+	// 3. get node
+	node, err := getNode(ctx, r.nodeLister, nodeName)
 	if err != nil {
 		return ctrl.Result{}, resultError(err)
 	}
@@ -159,40 +150,25 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	return ctrl.Result{}, nil
 }
 
-// syncNodeLabels syncs node labels between the existing set of labels and the ones given in the configuration.
-// This method returns errSkipUpdate if no updates should be done.
-func syncNodeLabels(node *corev1.Node, configNodeLabels map[string]string) error {
-	//nodeLabels := node.GetLabels()
-
-	// put added labels (as a slice) into the annotation addedLabelsNodeAnnotation
-
-	// FIXME: if we added some labels before and they were removed from the configuration then we wouldn't delete them from the node labels ever
-	// that needs to be fixed
-	if len(configNodeLabels) == 0 {
-		return errors.ErrSkipUpdate
+func getNodeConfig(ctx context.Context, clientset *kubernetes.Clientset, nodeName string) (*nodes.Config, error) {
+	secret, err := clientset.CoreV1().Secrets(consts.GetNamespace()).Get(ctx, consts.NodeConfigSecretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
 	}
-
-	// check node labels
-
-	return errors.ErrSkipUpdate
+	nodeConfigBytes, ok := secret.Data[nodeName]
+	if !ok {
+		err = fmt.Errorf("failed to find node %q in config (keys: %v)", nodeName, secretKeys(secret))
+		return nil, err
+	}
+	return nodes.ParseConfig(nodeConfigBytes)
 }
 
-// syncNodeTaints syncs node taints between the existing set of taints and the ones given in the configuration.
-// This method returns errSkipUpdate if no updates should be done.
-func syncNodeTaints(node *corev1.Node, configNodeTaints map[string]string) error {
-	//nodeTaints := node.Spec.Taints
-
-	// put added taints (as a slice) into the annotation addedTaintsNodeAnnotation
-
-	// FIXME: if we added some taints before and they were dropped from the configuration then we wouldn't delete them from the node taints ever
-	// that needs to be fixed
-	if len(configNodeTaints) == 0 {
-		return errors.ErrSkipUpdate
+func getNode(ctx context.Context, nodeLister listersv1.NodeLister, nodeName string) (*corev1.Node, error) {
+	node, err := nodeLister.Get(nodeName)
+	if err != nil {
+		return nil, err
 	}
-
-	// check node taints
-
-	return errors.ErrSkipUpdate
+	return node.DeepCopy(), nil
 }
 
 func secretKeys(secret *corev1.Secret) []string {

@@ -6,8 +6,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// NodeConfig is the k3OS config.yaml file.
-type NodeConfig struct {
+// Config is the k3OS config.yaml file.
+type Config struct {
 	Hostname string `yaml:"hostname"`
 
 	K3OS struct {
@@ -16,9 +16,9 @@ type NodeConfig struct {
 	} `yaml:"k3os"`
 }
 
-// ParseNodeConfig parses the data into a NodeConfig object.
-func ParseNodeConfig(data []byte) (*NodeConfig, error) {
-	nc := &NodeConfig{}
+// ParseConfig parses the data into a Config object.
+func ParseConfig(data []byte) (*Config, error) {
+	nc := &Config{}
 	if err := yaml.Unmarshal(data, nc); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal YAML node config data: %w", err)
 	}
