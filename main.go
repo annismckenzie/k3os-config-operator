@@ -76,6 +76,8 @@ func main() {
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "8a68cfa7.operators.annismckenzie.github.com",
+
+		LeaderElectionReleaseOnCancel: true, // make the leader step down voluntarily when the manager ends
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to create manager")
