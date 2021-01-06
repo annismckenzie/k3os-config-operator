@@ -35,8 +35,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	listersv1 "k8s.io/client-go/listers/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -102,14 +100,14 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	nodeName := consts.GetNodeName()
 
 	// 2. get node config
-	nodeConfig, err := getNodeConfig(ctx, r.clientset, nodeName)
+	nodeConfig, err := r.getNodeConfig(ctx, nodeName)
 	if err != nil {
 		return ctrl.Result{}, resultError(err)
 	}
 	r.logger.Info("successfully fetched node config", "config", nodeConfig)
 
 	// 3. get node
-	node, err := getNode(ctx, r.nodeLister, nodeName)
+	node, err := r.getNode(ctx, nodeName)
 	if err != nil {
 		return ctrl.Result{}, resultError(err)
 	}
@@ -147,8 +145,8 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	return ctrl.Result{}, nil
 }
 
-func getNodeConfig(ctx context.Context, clientset *kubernetes.Clientset, nodeName string) (*nodes.Config, error) {
-	secret, err := clientset.CoreV1().Secrets(consts.GetNamespace()).Get(ctx, consts.NodeConfigSecretName, metav1.GetOptions{})
+func (r *K3OSConfigReconciler) getNodeConfig(ctx context.Context, nodeName string) (*nodes.Config, error) {
+	secret, err := r.clientset.CoreV1().Secrets(r.namespace).Get(ctx, consts.NodeConfigSecretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -160,8 +158,8 @@ func getNodeConfig(ctx context.Context, clientset *kubernetes.Clientset, nodeNam
 	return nodes.ParseConfig(nodeConfigBytes)
 }
 
-func getNode(ctx context.Context, nodeLister listersv1.NodeLister, nodeName string) (*corev1.Node, error) {
-	node, err := nodeLister.Get(nodeName)
+func (r *K3OSConfigReconciler) getNode(ctx context.Context, nodeName string) (*corev1.Node, error) {
+	node, err := r.nodeLister.Get(nodeName)
 	if err != nil {
 		return nil, err
 	}
