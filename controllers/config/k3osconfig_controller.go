@@ -81,6 +81,23 @@ func (r *K3OSConfigReconciler) handleK3OSConfigAsLeader(ctx context.Context, con
 	return ctrl.Result{}, nil
 }
 
+func resultError(err error) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, errors.ErrSkipUpdate):
+		return nil
+	case apierrors.IsNotFound(err), apierrors.IsGone(err):
+		// log error
+		return nil
+	case apierrors.IsForbidden(err):
+		// log error
+		return nil
+	default:
+		return err
+	}
+}
+
 func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
 	// 1. get node name we're running
 	nodeName := consts.GetNodeName()
@@ -91,7 +108,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	// 2. fetch secret with node configs
 	secret, err := r.clientset.CoreV1().Secrets(config.GetNamespace()).Get(ctx, consts.NodeConfigSecretName, metav1.GetOptions{})
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, resultError(err)
 	}
 
 	// 3. get node config
@@ -108,7 +125,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 
 	node, err := r.nodeLister.Get(nodeName)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, resultError(err)
 	}
 
 	var updateNode bool
@@ -117,7 +134,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	if config.Spec.SyncNodeLabels {
 		if err = nodes.NewLabeler().Reconcile(node, nodeConfig.K3OS.Labels); err == nil {
 			updateNode = true
-		} else if !errors.Is(err, errors.ErrSkipUpdate) { // error is non-nil but it's not the one telling us to skip the update, bail
+		} else if err = resultError(err); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -126,7 +143,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	if config.Spec.SyncNodeTaints {
 		if err = syncNodeTaints(node, map[string]string{}); err == nil { // FIXME: this does nothing for now
 			updateNode = true
-		} else if !errors.Is(err, errors.ErrSkipUpdate) { // error is non-nil but it's not the one telling us to skip the update, bail
+		} else if err = resultError(err); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
