@@ -43,7 +43,7 @@ import (
 // +kubebuilder:rbac:groups=config.operators.annismckenzie.github.com,resources=k3osconfigs/status,verbs=get;update;patch,namespace=k3os-config-operator-system
 
 // allow operator to get and watch Secret objects in its namespace
-// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;watch,namespace=k3os-config-operator-system
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch,namespace=k3os-config-operator-system
 
 // allow operator to update Node objects (the verbs deliberately do not include create and delete)
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;update;patch
