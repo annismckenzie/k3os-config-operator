@@ -34,6 +34,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -70,13 +71,13 @@ func main() {
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		Namespace:          consts.GetNamespace(),
-		MetricsBindAddress: metricsAddr,
-		Port:               9443,
-		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "8a68cfa7.operators.annismckenzie.github.com",
-
+		Scheme:                        scheme,
+		Namespace:                     consts.GetNamespace(),
+		MetricsBindAddress:            metricsAddr,
+		Port:                          9443,
+		LeaderElection:                enableLeaderElection,
+		LeaderElectionID:              "8a68cfa7.operators.annismckenzie.github.com",
+		LeaderElectionResourceLock:    resourcelock.LeasesResourceLock,
 		LeaderElectionReleaseOnCancel: true, // make the leader step down voluntarily when the manager ends
 	})
 	if err != nil {
