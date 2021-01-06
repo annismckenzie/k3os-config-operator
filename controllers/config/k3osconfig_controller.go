@@ -100,9 +100,6 @@ func resultError(err error) error {
 func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
 	// 1. get node name we're running
 	nodeName := consts.GetNodeName()
-	if nodeName == "" {
-		panic("Failed to find node name in environment. Did you forget to set NODE_NAME?")
-	}
 
 	// 2. get node config
 	nodeConfig, err := getNodeConfig(ctx, r.clientset, nodeName)
