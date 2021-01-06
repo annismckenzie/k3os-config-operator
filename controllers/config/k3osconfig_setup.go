@@ -26,19 +26,28 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
 	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
 	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	listersv1 "k8s.io/client-go/listers/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // K3OSConfigReconciler reconciles a K3OSConfig object.
@@ -102,20 +111,72 @@ func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr
 		}
 	}
 
-	if !r.leader { // wrap manager so this can run without a leader lease
-		mgr = &nonLeaderLeaseNeedingManagerWrapper{Manager: mgr}
-	}
-
 	// cannot inject via inject.LoggerInto because `leader` field isn't set at that point
 	r.logger = mgr.GetLogger().
 		WithName("controllers").
 		WithName("K3OSConfig").
 		WithValues("podName", os.Getenv("HOSTNAME"), "leader", r.leader)
 
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&configv1alpha1.K3OSConfig{}).
-		//Watches()  // TODO: can I watch a secret named k3os-nodes with this? That'd be rad.
-		Complete(r)
+	if r.leader { // if we're building the controller for the leader we can bail here
+		return ctrl.NewControllerManagedBy(mgr).For(&configv1alpha1.K3OSConfig{}).Complete(r)
+	}
+
+	// wrap manager so this can run without a leader lease
+	mgr = &nonLeaderLeaseNeedingManagerWrapper{Manager: mgr}
+	c := ctrl.NewControllerManagedBy(mgr).For(&configv1alpha1.K3OSConfig{})
+
+	// construct a watch on the Secret resource that contains the node config.yaml files
+	opts := []builder.WatchesOption{
+		builder.OnlyMetadata, // only watch and cache the metadata of the secrets because we don't need the contents
+		builder.WithPredicates(labelSelectorPredicateForSecret()), // filter the list of secrets using a label selector
+	}
+	c.Watches(&source.Kind{Type: &corev1.Secret{}}, handler.EnqueueRequestsFromMapFunc(r.enqueueObjectsOnChanges), opts...)
+
+	// construct a watch on the Node this operator is running on
+	opts = []builder.WatchesOption{
+		builder.OnlyMetadata, // only watch and cache the metadata of the nodes because we don't need the contents
+		builder.WithPredicates(namePredicateForNode()),
+	}
+	c.Watches(&source.Kind{Type: &corev1.Node{}}, handler.EnqueueRequestsFromMapFunc(r.enqueueObjectsOnChanges), opts...)
+
+	return c.Complete(r)
+}
+
+func namePredicateForNode() predicate.Predicate {
+	nodeName := consts.GetNodeName()
+
+	return predicate.NewPredicateFuncs(func(o client.Object) bool {
+		return o.GetName() == nodeName
+	})
+}
+
+func labelSelectorPredicateForSecret() predicate.Predicate {
+	labelSelectorForSecret := metav1.AddLabelToSelector(&metav1.LabelSelector{}, "app.kubernetes.io/managed-by", "k3os-config-operator")
+	p, err := predicate.LabelSelectorPredicate(*labelSelectorForSecret)
+	if err != nil {
+		// we're panicking here in order to crash the operator because if this doesn't work there's no
+		// recourse (and indicates a programmer error when building the label selector above)
+		panic(fmt.Sprintf("failed to build label selector predicate for secret: %v", err))
+	}
+	return p
+}
+
+func (r *K3OSConfigReconciler) enqueueObjectsOnChanges(object client.Object) []reconcile.Request {
+	r.logger.Info("change to a watched object noticed", "namespace/name", client.ObjectKeyFromObject(object).String())
+
+	// construct a PartialObjectMetadataList for a list of K3OSConfig resources in the operator's namespace
+	var k3osconfigs metav1.PartialObjectMetadataList
+	k3osconfigs.SetGroupVersionKind(configv1alpha1.GroupVersion.WithKind("K3OSConfigList"))
+	if err := r.client.List(r.shutdownCtx, &k3osconfigs, client.InNamespace(r.namespace)); err != nil {
+		r.logger.Error(err, "failed to PartialObjectMetadataList all K3OSConfig resources in this namespace")
+	}
+
+	requests := make([]reconcile.Request, len(k3osconfigs.Items))
+	for i, item := range k3osconfigs.Items {
+		requests[i] = reconcile.Request{NamespacedName: types.NamespacedName{Name: item.GetName(), Namespace: item.GetNamespace()}}
+	}
+	r.logger.Info("enqueuing requests for all K3OSConfig resources in this namespace", "namespace", r.namespace, "requests", requests)
+	return requests
 }
 
 // Interface implementations for dependency injection
