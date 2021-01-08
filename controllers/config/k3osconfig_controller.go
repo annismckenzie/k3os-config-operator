@@ -32,6 +32,7 @@ import (
 	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
 	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
 	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -78,17 +79,17 @@ func (r *K3OSConfigReconciler) handleK3OSConfigAsLeader(ctx context.Context, con
 	return ctrl.Result{}, nil
 }
 
-func resultError(err error) error {
+func resultError(err error, logger logr.Logger) error {
 	switch {
 	case err == nil:
 		return nil
 	case errors.Is(err, errors.ErrSkipUpdate):
 		return nil
 	case apierrors.IsNotFound(err), apierrors.IsGone(err):
-		// log error
+		logger.Info("object is gone, not requeuing")
 		return nil
 	case apierrors.IsForbidden(err):
-		// log error
+		logger.Error(err, "failed to execute operation, did you forget to apply some RBAC rules?")
 		return nil
 	default:
 		return err
@@ -102,14 +103,14 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	// 2. get node config
 	nodeConfig, err := r.getNodeConfig(ctx, nodeName)
 	if err != nil {
-		return ctrl.Result{}, resultError(err)
+		return ctrl.Result{}, resultError(err, r.logger)
 	}
 	r.logger.Info("successfully fetched node config", "config", nodeConfig)
 
 	// 3. get node
 	node, err := r.getNode(ctx, nodeName)
 	if err != nil {
-		return ctrl.Result{}, resultError(err)
+		return ctrl.Result{}, resultError(err, r.logger)
 	}
 
 	var updateNode bool
@@ -119,7 +120,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	if config.Spec.SyncNodeLabels {
 		if err = labeler.Reconcile(node, nodeConfig.K3OS.Labels); err == nil {
 			updateNode = true
-		} else if err = resultError(err); err != nil {
+		} else if err = resultError(err, r.logger); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -129,7 +130,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	if config.Spec.SyncNodeTaints {
 		if err = tainter.Reconcile(node, nodeConfig.K3OS.Taints); err == nil {
 			updateNode = true
-		} else if err = resultError(err); err != nil {
+		} else if err = resultError(err, r.logger); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
