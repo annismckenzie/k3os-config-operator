@@ -1,0 +1,7 @@
+apiVersion: config.operators.annismckenzie.github.com/v1alpha1
+kind: K3OSConfigFile
+metadata:
+  name: k3osconfigfile-sample
+spec:
+  # Add fields here
+  foo: bar
