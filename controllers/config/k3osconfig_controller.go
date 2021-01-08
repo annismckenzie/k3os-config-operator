@@ -145,7 +145,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	return ctrl.Result{}, nil
 }
 
-func (r *K3OSConfigReconciler) getNodeConfig(ctx context.Context, nodeName string) (*nodes.Config, error) {
+func (r *K3OSConfigReconciler) getNodeConfig(ctx context.Context, nodeName string) (*configv1alpha1.K3OSConfigFileSpec, error) {
 	secret, err := r.clientset.CoreV1().Secrets(r.namespace).Get(ctx, consts.NodeConfigSecretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func (r *K3OSConfigReconciler) getNodeConfig(ctx context.Context, nodeName strin
 		err = fmt.Errorf("failed to find node %q in config (keys: %v)", nodeName, secretKeys(secret))
 		return nil, err
 	}
-	return nodes.ParseConfig(nodeConfigBytes)
+	return configv1alpha1.ParseConfigYAML(nodeConfigBytes)
 }
 
 func (r *K3OSConfigReconciler) getNode(ctx context.Context, nodeName string) (*corev1.Node, error) {

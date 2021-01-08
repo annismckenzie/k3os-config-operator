@@ -25,6 +25,9 @@ SOFTWARE.
 package v1alpha1
 
 import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,10 +39,20 @@ type K3OSConfigFileSectionK3OS struct {
 }
 
 // K3OSConfigFileSpec defines the desired state of K3OSConfigFile.
+// Use `ParseConfigYAML()` to parse a k3OS config.yaml file.
 type K3OSConfigFileSpec struct {
 	Hostname string `json:"hostname" yaml:"hostname"`
 
 	K3OS K3OSConfigFileSectionK3OS `json:"k3os" yaml:"k3os"`
+}
+
+// ParseConfigYAML parses the data of a k3OS config.yaml into a K3OSConfigFileSpec object.
+func ParseConfigYAML(data []byte) (*K3OSConfigFileSpec, error) {
+	c := &K3OSConfigFileSpec{}
+	if err := yaml.Unmarshal(data, c); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal YAML node config data: %w", err)
+	}
+	return c, nil
 }
 
 // K3OSConfigFileStatus defines the observed state of K3OSConfigFile.
