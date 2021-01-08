@@ -7,6 +7,25 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: null
+  name: manager-role
+  namespace: k3os-config-operator-system
+rules:
+- apiGroups:
   - config.operators.annismckenzie.github.com
   resources:
   - k3osconfigs
@@ -29,10 +48,8 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - nodes
+  - secrets
   verbs:
   - get
   - list
-  - patch
-  - update
   - watch

@@ -22,151 +22,164 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package controllers
+package config
 
 import (
 	"context"
-	"os"
-	"time"
+	"fmt"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
+	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
+	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
+	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
-// response is a helper struct to cut down on the amount of if and switch statements.
-type response struct {
-	result reconcile.Result
-	err    error
-}
+// allow operator to handle K3OSConfig CR objects in its namespace
+// +kubebuilder:rbac:groups=config.operators.annismckenzie.github.com,resources=k3osconfigs,verbs=get;list;watch;create;update;patch;delete,namespace=k3os-config-operator-system
+// +kubebuilder:rbac:groups=config.operators.annismckenzie.github.com,resources=k3osconfigs/status,verbs=get;update;patch,namespace=k3os-config-operator-system
 
-// K3OSConfigReconciler reconciles a K3OSConfig object.
-type K3OSConfigReconciler struct {
-	client                 client.Client
-	logger                 logr.Logger
-	scheme                 *runtime.Scheme
-	leader                 bool
-	defaultRequeueResponse ctrl.Result
-}
-
-// +kubebuilder:rbac:groups=config.operators.annismckenzie.github.com,resources=k3osconfigs,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=config.operators.annismckenzie.github.com,resources=k3osconfigs/status,verbs=get;update;patch
+// allow operator to get, list and watch Secret objects in its namespace
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch,namespace=k3os-config-operator-system
 
 // allow operator to update Node objects (the verbs deliberately do not include create and delete)
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;update;patch
 
 // Reconcile handles K3OSConfig CRs.
-func (r *K3OSConfigReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-
-	config, response, err := r.fetchK3OSConfig(ctx, req.NamespacedName)
-	if err != nil {
+func (r *K3OSConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+	config := &configv1alpha1.K3OSConfig{}
+	if err := r.client.Get(ctx, req.NamespacedName, config); err != nil {
+		if apierrors.IsNotFound(err) { // request object not found, could have been deleted after reconcile request, return and don't requeue
+			return result, nil
+		}
 		r.logger.Error(err, "failed to fetch K3OSConfig")
-		return response.result, response.err
+		return result, err
 	}
-
+	config = config.DeepCopy()
 	r.logger.Info("successfully fetched K3OSConfig", "spec", config.Spec)
 
 	switch r.leader {
 	case true: // this instance of the operator won the leader election and can update the K3OSConfig CR
-		return r.handleK3OSConfigAsLeader(ctx, config)
+		result, err = r.handleK3OSConfigAsLeader(ctx, config)
 	default: // handle k3os config file
-		return r.handleK3OSConfig(ctx, config)
+		result, err = r.handleK3OSConfig(ctx, config)
 	}
+
+	if err != nil {
+		r.logger.Error(err, "failed to handle K3OSConfig")
+	}
+	return result, err
 }
 
 func (r *K3OSConfigReconciler) handleK3OSConfigAsLeader(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
-	return r.defaultRequeueResponse, nil
+	return ctrl.Result{}, nil
+}
+
+func resultError(err error, logger logr.Logger) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, errors.ErrSkipUpdate):
+		return nil
+	case apierrors.IsNotFound(err), apierrors.IsGone(err):
+		logger.Info("object is gone, not requeuing")
+		return nil
+	case apierrors.IsForbidden(err):
+		logger.Error(err, "failed to execute operation, did you forget to apply some RBAC rules?")
+		return nil
+	default:
+		return err
+	}
 }
 
 func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
-	return r.defaultRequeueResponse, nil
-}
+	// 1. get node name we're running
+	nodeName := consts.GetNodeName()
 
-func (r *K3OSConfigReconciler) fetchK3OSConfig(ctx context.Context, name types.NamespacedName) (*configv1alpha1.K3OSConfig, *response, error) {
-	config := &configv1alpha1.K3OSConfig{}
-	if err := r.client.Get(ctx, name, config); err != nil {
-		if errors.IsNotFound(err) { // request object not found, could have been deleted after reconcile request, return and don't requeue
-			return nil, &response{result: ctrl.Result{}, err: nil}, err
-		}
-		return nil, &response{result: r.defaultRequeueResponse, err: nil}, err
+	// 2. get node config
+	nodeConfig, err := r.getNodeConfig(ctx, nodeName)
+	if err != nil {
+		return ctrl.Result{}, resultError(err, r.logger)
 	}
-	return config.DeepCopy(), nil, nil
-}
+	r.logger.Info("successfully fetched node config", "config", nodeConfig)
 
-// Option denotes an option for configuring this controller.
-type Option interface{}
+	// 3. get node
+	node, err := r.getNode(ctx, nodeName)
+	if err != nil {
+		return ctrl.Result{}, resultError(err, r.logger)
+	}
 
-type requireLeaderElectionOpt struct {
-	requireLeaderElection bool
-}
+	var updateNode bool
 
-// RequireLeaderElection returns an option that requires the operator being the leader to run this controller instance.
-func RequireLeaderElection() Option {
-	return &requireLeaderElectionOpt{}
-}
-
-// https://github.com/kubernetes-sigs/controller-runtime/pull/921#issuecomment-662187521 doesn't work
-// but there's always another way. 🥁 🥁 🥁
-type nonLeaderLeaseNeedingManagerWrapper struct {
-	manager.Manager
-}
-
-func (w *nonLeaderLeaseNeedingManagerWrapper) Add(r manager.Runnable) error {
-	return w.Manager.Add(&nonLeaderLeaseNeedingRunnableWrapper{Runnable: r})
-}
-
-type nonLeaderLeaseNeedingRunnableWrapper struct {
-	manager.Runnable
-}
-
-// NeedLeaderElection satisfies manager.LeaderElectionRunnable interface.
-func (w *nonLeaderLeaseNeedingRunnableWrapper) NeedLeaderElection() bool {
-	return false
-}
-
-// SetupWithManager is called in main to setup the K3OSConfig reconiler with the manager as a non-leader.
-func (r *K3OSConfigReconciler) SetupWithManager(mgr ctrl.Manager, options ...Option) error {
-	r.defaultRequeueResponse = ctrl.Result{RequeueAfter: time.Second * 30}
-
-	for _, option := range options {
-		if _, ok := option.(*requireLeaderElectionOpt); ok {
-			r.leader = true
+	// 4. sync node labels
+	labeler := nodes.NewLabeler()
+	if config.Spec.SyncNodeLabels {
+		if err = labeler.Reconcile(node, nodeConfig.K3OS.Labels); err == nil {
+			updateNode = true
+		} else if err = resultError(err, r.logger); err != nil {
+			return ctrl.Result{}, err
 		}
 	}
 
-	if !r.leader { // wrap manager so this can run without a leader lease
-		mgr = &nonLeaderLeaseNeedingManagerWrapper{Manager: mgr}
+	// 5. sync node taints
+	tainter := nodes.NewTainter()
+	if config.Spec.SyncNodeTaints {
+		if err = tainter.Reconcile(node, nodeConfig.K3OS.Taints); err == nil {
+			updateNode = true
+		} else if err = resultError(err, r.logger); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
-	// cannot inject via inject.LoggerInto because `leader` field isn't set at that point
-	r.logger = mgr.GetLogger().
-		WithName("controllers").
-		WithName("K3OSConfig").
-		WithValues("podName", os.Getenv("HOSTNAME"), "leader", r.leader)
+	if updateNode {
+		if err = r.updateNode(ctx, node); err != nil {
+			return ctrl.Result{}, err
+		}
+		r.logger.Info("updated node", "labels", node.GetLabels(), "updatedLabels", labeler.GetUpdatedLabels(), "taints", node.Spec.Taints)
+	}
 
-	return ctrl.NewControllerManagedBy(mgr).For(&configv1alpha1.K3OSConfig{}).Complete(r)
+	return ctrl.Result{}, nil
 }
 
-// Interface implementations for dependency injection
-var _ inject.Client = (*K3OSConfigReconciler)(nil)
-var _ inject.Scheme = (*K3OSConfigReconciler)(nil)
+func (r *K3OSConfigReconciler) getNodeConfig(ctx context.Context, nodeName string) (*nodes.Config, error) {
+	secret, err := r.clientset.CoreV1().Secrets(r.namespace).Get(ctx, consts.NodeConfigSecretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	nodeConfigBytes, ok := secret.Data[nodeName]
+	if !ok {
+		err = fmt.Errorf("failed to find node %q in config (keys: %v)", nodeName, secretKeys(secret))
+		return nil, err
+	}
+	return nodes.ParseConfig(nodeConfigBytes)
+}
 
-// InjectClient satisfies the inject.Client interface.
-func (r *K3OSConfigReconciler) InjectClient(client client.Client) error {
-	r.client = client
+func (r *K3OSConfigReconciler) getNode(ctx context.Context, nodeName string) (*corev1.Node, error) {
+	node, err := r.nodeLister.Get(nodeName)
+	if err != nil {
+		return nil, err
+	}
+	return node.DeepCopy(), nil
+}
+
+func (r *K3OSConfigReconciler) updateNode(ctx context.Context, node *corev1.Node) error {
+	// TODO: switch to a better way that either implements retries or switch to patching
+	// the node (which would be faster anyways). The only fields we need to update are
+	// the labels, the taints and the annotations (for state tracking).
+	if _, err := r.clientset.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
 	return nil
 }
 
-// InjectScheme satisfies the inject.Scheme interface.
-func (r *K3OSConfigReconciler) InjectScheme(scheme *runtime.Scheme) error {
-	r.scheme = scheme
-	return nil
+func secretKeys(secret *corev1.Secret) []string {
+	keys := make([]string, 0, len(secret.Data))
+	for key := range secret.Data {
+		keys = append(keys, key)
+	}
+	return keys
 }

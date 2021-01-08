@@ -19,6 +19,7 @@ ARG TARGETARCH
 COPY main.go main.go
 COPY apis/ apis/
 COPY controllers/ controllers/
+COPY pkg/ pkg/
 
 # Build
 ENV GO111MODULE=on
