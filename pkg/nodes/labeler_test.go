@@ -175,7 +175,7 @@ func Test_labeler_Reconcile(t *testing.T) {
 				addedLabels = append(addedLabels, addedLabel)
 			}
 			sort.Strings(addedLabels)
-			addedLabelsAnnotation := strings.Join(addedLabels, internalConsts.NodeAnnotationValueSeperator)
+			addedLabelsAnnotation := strings.Join(addedLabels, internalConsts.NodeAnnotationValueSeparator)
 			if tt.expectedAddedLabelsAnnotation != addedLabelsAnnotation {
 				t.Errorf("labeler expected added labels annotation = %v, got %v", tt.expectedAddedLabelsAnnotation, addedLabelsAnnotation)
 			}

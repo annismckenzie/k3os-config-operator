@@ -84,7 +84,7 @@ func getAddedLabels(node *corev1.Node) map[string]struct{} {
 
 	addedLabelsMap := map[string]struct{}{}
 	if addedLabelsAnnotation := node.GetAnnotations()[consts.GetAddedLabelsNodeAnnotation()]; addedLabelsAnnotation != "" {
-		for _, addedLabel := range strings.Split(addedLabelsAnnotation, internalConsts.NodeAnnotationValueSeperator) {
+		for _, addedLabel := range strings.Split(addedLabelsAnnotation, internalConsts.NodeAnnotationValueSeparator) {
 			addedLabelsMap[addedLabel] = struct{}{}
 		}
 	}
@@ -102,6 +102,6 @@ func updateAddedLabels(node *corev1.Node, addedLabelsMap map[string]struct{}) {
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
-	annotations[consts.GetAddedLabelsNodeAnnotation()] = strings.Join(addedLabels, internalConsts.NodeAnnotationValueSeperator)
+	annotations[consts.GetAddedLabelsNodeAnnotation()] = strings.Join(addedLabels, internalConsts.NodeAnnotationValueSeparator)
 	node.Annotations = annotations
 }

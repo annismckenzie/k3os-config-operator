@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	// NodeAnnotationValueSeperator is the string that is used as the separator for the added labels and taints annotations.
-	NodeAnnotationValueSeperator = ","
+	// NodeAnnotationValueSeparator is the string that is used as the separator for the added labels and taints annotations.
+	NodeAnnotationValueSeparator = ","
 )
 
 // Even though this package is called consts and these are not constant these must be treated as constants regardless.
