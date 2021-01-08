@@ -138,7 +138,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 		if err = r.updateNode(ctx, node); err != nil {
 			return ctrl.Result{}, err
 		}
-		r.logger.Info("updated node", "labels", node.GetLabels(), "updatedLabels", labeler.GetUpdatedLabels(), "updatedTaints", tainter.GetUpdatedTaints())
+		r.logger.Info("updated node", "labels", node.GetLabels(), "updatedLabels", labeler.GetUpdatedLabels(), "taints", node.Spec.Taints)
 	}
 
 	return ctrl.Result{}, nil

@@ -21,6 +21,7 @@ var defaultNodeLabels = map[string]string{
 func defaultNode() *corev1.Node {
 	return (&corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node",
 			Labels: defaultNodeLabels,
 		},
 	}).DeepCopy()
