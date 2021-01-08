@@ -12,7 +12,6 @@ build:
 deploy:
   kustomize:
     paths:
-      - config/crd
       - config/default
 profiles:
   - name: production
