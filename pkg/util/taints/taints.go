@@ -22,12 +22,13 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
+// consts that are returned by ReorganizeTaints that tell the caller the summary
+// of what's been done to the node's taints (added, removed, just updated).
 const (
 	MODIFIED  = "modified"
 	TAINTED   = "tainted"
@@ -177,19 +178,6 @@ func addTaints(oldTaints []corev1.Taint, newTaints *[]corev1.Taint) bool {
 	return len(oldTaints) != len(*newTaints)
 }
 
-// CheckIfTaintsAlreadyExists checks if the node already has taints that we want to add and returns a string with taint keys.
-func CheckIfTaintsAlreadyExists(oldTaints []corev1.Taint, taints []corev1.Taint) string {
-	var existingTaintList = make([]string, 0)
-	for _, taint := range taints {
-		for _, oldTaint := range oldTaints {
-			if taint.Key == oldTaint.Key && taint.Effect == oldTaint.Effect {
-				existingTaintList = append(existingTaintList, taint.Key)
-			}
-		}
-	}
-	return strings.Join(existingTaintList, ",")
-}
-
 // DeleteTaintsByKey removes all the taints that have the same key to given taintKey
 func DeleteTaintsByKey(taints []corev1.Taint, taintKey string) ([]corev1.Taint, bool) {
 	newTaints := []corev1.Taint{}
@@ -218,53 +206,6 @@ func DeleteTaint(taints []corev1.Taint, taintToDelete *corev1.Taint) ([]corev1.T
 	return newTaints, deleted
 }
 
-// RemoveTaint tries to remove a taint from annotations list. Returns a new copy of updated Node and true if something was updated
-// false otherwise.
-func RemoveTaint(node *corev1.Node, taint *corev1.Taint) (*corev1.Node, bool, error) {
-	newNode := node.DeepCopy()
-	nodeTaints := newNode.Spec.Taints
-	if len(nodeTaints) == 0 {
-		return newNode, false, nil
-	}
-
-	if !TaintExists(nodeTaints, taint) {
-		return newNode, false, nil
-	}
-
-	newTaints, _ := DeleteTaint(nodeTaints, taint)
-	newNode.Spec.Taints = newTaints
-	return newNode, true, nil
-}
-
-// AddOrUpdateTaint tries to add a taint to annotations list. Returns a new copy of updated Node and true if something was updated
-// false otherwise.
-func AddOrUpdateTaint(node *corev1.Node, taint *corev1.Taint) (*corev1.Node, bool, error) {
-	newNode := node.DeepCopy()
-	nodeTaints := newNode.Spec.Taints
-
-	var newTaints []corev1.Taint
-	updated := false
-	for i := range nodeTaints {
-		if taint.MatchTaint(&nodeTaints[i]) {
-			if equality.Semantic.DeepEqual(*taint, nodeTaints[i]) {
-				return newNode, false, nil
-			}
-			newTaints = append(newTaints, *taint)
-			updated = true
-			continue
-		}
-
-		newTaints = append(newTaints, nodeTaints[i])
-	}
-
-	if !updated {
-		newTaints = append(newTaints, *taint)
-	}
-
-	newNode.Spec.Taints = newTaints
-	return newNode, true, nil
-}
-
 // TaintExists checks if the given taint exists in list of taints. Returns true if exists false otherwise.
 func TaintExists(taints []corev1.Taint, taintToFind *corev1.Taint) bool {
 	for _, taint := range taints {
@@ -291,16 +232,4 @@ func TaintSetDiff(t1, t2 []corev1.Taint) (taintsToAdd []*corev1.Taint, taintsToR
 	}
 
 	return
-}
-
-func TaintSetFilter(taints []corev1.Taint, fn func(*corev1.Taint) bool) []corev1.Taint {
-	res := []corev1.Taint{}
-
-	for _, taint := range taints {
-		if fn(&taint) {
-			res = append(res, taint)
-		}
-	}
-
-	return res
 }

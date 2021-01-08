@@ -11,7 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// Tainter interface allows the reconciliation of node taints.
+// Tainter allows reconciling node taints.
 type Tainter interface {
 	Reconcile(*corev1.Node, []string) error
 }

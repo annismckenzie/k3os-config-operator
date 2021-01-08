@@ -42,7 +42,7 @@ import (
 // +kubebuilder:rbac:groups=config.operators.annismckenzie.github.com,resources=k3osconfigs,verbs=get;list;watch;create;update;patch;delete,namespace=k3os-config-operator-system
 // +kubebuilder:rbac:groups=config.operators.annismckenzie.github.com,resources=k3osconfigs/status,verbs=get;update;patch,namespace=k3os-config-operator-system
 
-// allow operator to get and watch Secret objects in its namespace
+// allow operator to get, list and watch Secret objects in its namespace
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch,namespace=k3os-config-operator-system
 
 // allow operator to update Node objects (the verbs deliberately do not include create and delete)
@@ -168,7 +168,7 @@ func (r *K3OSConfigReconciler) getNode(ctx context.Context, nodeName string) (*c
 func (r *K3OSConfigReconciler) updateNode(ctx context.Context, node *corev1.Node) error {
 	// TODO: switch to a better way that either implements retries or switch to patching
 	// the node (which would be faster anyways). The only fields we need to update are
-	// the labels, the taints and the annotations (for state tracking). 🤔
+	// the labels, the taints and the annotations (for state tracking).
 	if _, err := r.clientset.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{}); err != nil {
 		return err
 	}

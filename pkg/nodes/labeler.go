@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// Labeler interface allows the reconciliation of node labels.
+// Labeler allows reconciling node labels.
 type Labeler interface {
 	Reconcile(*corev1.Node, map[string]string) error
 	GetUpdatedLabels() map[string]string
