@@ -105,7 +105,7 @@ func getAddedTaints(node *corev1.Node) map[corev1.Taint]struct{} {
 	}
 
 	addedTaintsMap := map[corev1.Taint]struct{}{}
-	if addedTaintsAnnotation := node.GetAnnotations()[consts.GetAddedTaintsNodeAnnotation()]; addedTaintsAnnotation != "" {
+	if addedTaintsAnnotation := node.GetAnnotations()[consts.AddedTaintsNodeAnnotation()]; addedTaintsAnnotation != "" {
 		for _, addedTaint := range strings.Split(addedTaintsAnnotation, internalConsts.NodeAnnotationValueSeparator) {
 			parsed, _, err := taints.ParseTaints([]string{addedTaint})
 			if len(parsed) != 1 || err != nil {
@@ -128,6 +128,6 @@ func updateAddedTaints(node *corev1.Node, addedTaintsMap map[corev1.Taint]struct
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
-	annotations[consts.GetAddedTaintsNodeAnnotation()] = strings.Join(addedTaints, internalConsts.NodeAnnotationValueSeparator)
+	annotations[consts.AddedTaintsNodeAnnotation()] = strings.Join(addedTaints, internalConsts.NodeAnnotationValueSeparator)
 	node.Annotations = annotations
 }

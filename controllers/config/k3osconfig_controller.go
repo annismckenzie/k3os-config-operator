@@ -98,7 +98,7 @@ func resultError(err error, logger logr.Logger) error {
 
 func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
 	// 1. get node name we're running
-	nodeName := consts.GetNodeName()
+	nodeName := consts.NodeName()
 
 	// 2. get node config
 	nodeConfig, err := r.getNodeConfig(ctx, nodeName)
@@ -139,7 +139,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 		if err = r.updateNode(ctx, node); err != nil {
 			return ctrl.Result{}, err
 		}
-		r.logger.Info("updated node", "updatedLabels", labeler.GetUpdatedLabels(), "taints", node.Spec.Taints)
+		r.logger.Info("updated node", "updatedLabels", labeler.UpdatedLabels(), "taints", node.Spec.Taints)
 	}
 
 	return ctrl.Result{}, nil

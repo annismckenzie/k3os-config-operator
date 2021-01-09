@@ -20,25 +20,25 @@ const (
 	DevModeEnvName = "DEV_MODE"
 )
 
-// GetNamespace returns the configured namespace.
+// Namespace returns the configured namespace.
 // That this is fetched from the environment is an implementation detail.
-func GetNamespace() string {
+func Namespace() string {
 	return os.Getenv(namespaceEnvName)
 }
 
-// GetNodeName returns the node's name the operator is running on.
+// NodeName returns the node's name the operator is running on.
 // That this is fetched from the environment is an implementation detail.
-func GetNodeName() string {
+func NodeName() string {
 	return os.Getenv(nodeNameEnvName)
 }
 
-// GetAddedLabelsNodeAnnotation returns the annotation where labels that the operator added are kept.
-func GetAddedLabelsNodeAnnotation() string {
+// AddedLabelsNodeAnnotation returns the annotation where labels that the operator added are kept.
+func AddedLabelsNodeAnnotation() string {
 	return consts.AddedLabelsNodeAnnotation
 }
 
-// GetAddedTaintsNodeAnnotation returns the annotation where taints that the operator added are kept.
-func GetAddedTaintsNodeAnnotation() string {
+// AddedTaintsNodeAnnotation returns the annotation where taints that the operator added are kept.
+func AddedTaintsNodeAnnotation() string {
 	return consts.AddedTaintsNodeAnnotation
 }
 

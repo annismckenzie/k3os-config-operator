@@ -97,7 +97,7 @@ func (w *nonLeaderLeaseNeedingRunnableWrapper) NeedLeaderElection() bool {
 func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr ctrl.Manager, options ...Option) error {
 	r.nodeLister = nodes.NewNodeLister()
 	r.shutdownCtx = shutdownCtx
-	r.namespace = consts.GetNamespace()
+	r.namespace = consts.Namespace()
 
 	clientset, err := kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
@@ -143,7 +143,7 @@ func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr
 }
 
 func namePredicateForNode() predicate.Predicate {
-	nodeName := consts.GetNodeName()
+	nodeName := consts.NodeName()
 
 	return predicate.NewPredicateFuncs(func(o client.Object) bool {
 		return o.GetName() == nodeName

@@ -66,14 +66,14 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseDevMode(config.EnableDevMode())))
 	ctx := ctrl.SetupSignalHandler()
 
-	if nodeName := consts.GetNodeName(); nodeName == "" {
+	if nodeName := consts.NodeName(); nodeName == "" {
 		setupLog.Info("unable to determine node name (is the NODE_NAME environment variable set?)")
 		os.Exit(1)
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                        scheme,
-		Namespace:                     consts.GetNamespace(),
+		Namespace:                     consts.Namespace(),
 		MetricsBindAddress:            metricsAddr,
 		Port:                          9443,
 		LeaderElection:                enableLeaderElection,
