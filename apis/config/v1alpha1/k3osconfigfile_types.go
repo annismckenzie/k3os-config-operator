@@ -47,11 +47,14 @@ type K3OSConfigFileSpec struct {
 	Hostname string `json:"hostname" yaml:"hostname"`
 
 	K3OS K3OSConfigFileSectionK3OS `json:"k3os" yaml:"k3os"`
+
+	// Data contains the raw contents of the config file.
+	Data []byte `json:"-"`
 }
 
 // ParseConfigYAML parses the data of a k3OS config.yaml into a K3OSConfigFileSpec object.
 func ParseConfigYAML(data []byte) (*K3OSConfigFileSpec, error) {
-	c := &K3OSConfigFileSpec{}
+	c := &K3OSConfigFileSpec{Data: data}
 	if err := yaml.Unmarshal(data, c); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal YAML node config data: %w", err)
 	}
