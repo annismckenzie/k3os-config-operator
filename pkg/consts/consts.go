@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/annismckenzie/k3os-config-operator/pkg/internal/consts"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // constants for node secrets
@@ -39,4 +40,10 @@ func GetAddedLabelsNodeAnnotation() string {
 // GetAddedTaintsNodeAnnotation returns the annotation where taints that the operator added are kept.
 func GetAddedTaintsNodeAnnotation() string {
 	return consts.AddedTaintsNodeAnnotation
+}
+
+// LabelSelectorForNodeConfigFileSecret returns the label selector for the k3OS node config file secret.
+func LabelSelectorForNodeConfigFileSecret() metav1.LabelSelector {
+	labelSelector := metav1.AddLabelToSelector(&metav1.LabelSelector{}, "app.kubernetes.io/managed-by", "k3os-config-operator")
+	return *labelSelector
 }

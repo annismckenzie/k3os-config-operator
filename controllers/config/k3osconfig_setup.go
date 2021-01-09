@@ -151,8 +151,7 @@ func namePredicateForNode() predicate.Predicate {
 }
 
 func labelSelectorPredicateForSecret() predicate.Predicate {
-	labelSelectorForSecret := metav1.AddLabelToSelector(&metav1.LabelSelector{}, "app.kubernetes.io/managed-by", "k3os-config-operator")
-	p, err := predicate.LabelSelectorPredicate(*labelSelectorForSecret)
+	p, err := predicate.LabelSelectorPredicate(consts.LabelSelectorForNodeConfigFileSecret())
 	if err != nil {
 		// we're panicking here in order to crash the operator because if this doesn't work there's no
 		// recourse (and indicates a programmer error when building the label selector above)
