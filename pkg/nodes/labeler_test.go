@@ -108,6 +108,24 @@ func Test_labeler_Reconcile(t *testing.T) {
 			expectedAddedLabelsAnnotation: "someNewLabel",
 		},
 		{
+			name: "Node has existing labels, we added some labels, without any further changes it should skip updates",
+			args: args{
+				node: labeledNode(map[string]string{"addedLabel": "value"}),
+				configNodeLabels: map[string]string{
+					"addedLabel": "value",
+				},
+			},
+			expectedLabels: map[string]string{
+				"k3s.io/hostname":                  "n2-node",
+				"kubernetes.io/arch":               "arm64",
+				"node.kubernetes.io/instance-type": "k3s",
+				"someExistingLabel":                "existingValue",
+				"addedLabel":                       "value",
+			},
+			wantErr:                       errors.ErrSkipUpdate,
+			expectedAddedLabelsAnnotation: "addedLabel",
+		},
+		{
 			name: "Node has existing labels and we add and update some labels",
 			args: args{
 				node: defaultNode(),
