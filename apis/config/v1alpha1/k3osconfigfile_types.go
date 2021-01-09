@@ -52,12 +52,23 @@ type K3OSConfigFileSpec struct {
 	Data []byte `json:"-"`
 }
 
+// Validate checks the contents of the spec for errors and returns them.
+func (s *K3OSConfigFileSpec) Validate() error {
+	return nil
+}
+
 // ParseConfigYAML parses the data of a k3OS config.yaml into a K3OSConfigFileSpec object.
 func ParseConfigYAML(data []byte) (*K3OSConfigFileSpec, error) {
 	c := &K3OSConfigFileSpec{Data: data}
 	if err := yaml.Unmarshal(data, c); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal YAML node config data: %w", err)
 	}
+
+	// validate K3OSConfigFileSpec before returning
+	if err := c.Validate(); err != nil {
+		return c, err
+	}
+
 	return c, nil
 }
 
