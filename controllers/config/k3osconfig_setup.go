@@ -164,7 +164,7 @@ func labelSelectorPredicateForSecret() predicate.Predicate {
 // enqueueObjectsOnChanges is used to enqueue all K3OSConfig resources in the operator's namespace when
 // changes happen to the watched resources (secrets, nodes).
 func (r *K3OSConfigReconciler) enqueueObjectsOnChanges(object client.Object) []reconcile.Request {
-	r.logger.Info("change to a watched object noticed", "namespace/name", client.ObjectKeyFromObject(object).String())
+	r.logger.V(1).Info("change to a watched object noticed", "namespace/name", client.ObjectKeyFromObject(object).String())
 
 	// construct a PartialObjectMetadataList for a list of K3OSConfig resources in the operator's namespace
 	var k3osconfigs metav1.PartialObjectMetadataList
@@ -177,7 +177,7 @@ func (r *K3OSConfigReconciler) enqueueObjectsOnChanges(object client.Object) []r
 	for i, item := range k3osconfigs.Items {
 		requests[i] = reconcile.Request{NamespacedName: types.NamespacedName{Name: item.GetName(), Namespace: item.GetNamespace()}}
 	}
-	r.logger.Info("enqueuing requests for all K3OSConfig resources in this namespace", "namespace", r.namespace, "requests", requests)
+	r.logger.V(1).Info("enqueuing requests for all K3OSConfig resources in this namespace", "namespace", r.namespace, "requests", requests)
 	return requests
 }
 

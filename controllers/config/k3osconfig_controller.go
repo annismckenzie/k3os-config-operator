@@ -60,7 +60,7 @@ func (r *K3OSConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return result, err
 	}
 	config = config.DeepCopy()
-	r.logger.Info("successfully fetched K3OSConfig", "spec", config.Spec)
+	r.logger.V(1).Info("successfully fetched K3OSConfig", "spec", config.Spec)
 
 	switch r.leader {
 	case true: // this instance of the operator won the leader election and can update the K3OSConfig CR
@@ -105,7 +105,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 	if err != nil {
 		return ctrl.Result{}, resultError(err, r.logger)
 	}
-	r.logger.Info("successfully fetched node config", "config", nodeConfig)
+	r.logger.V(1).Info("successfully fetched node config", "config", nodeConfig)
 
 	// 3. get node
 	node, err := r.getNode(ctx, nodeName)
@@ -139,7 +139,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 		if err = r.updateNode(ctx, node); err != nil {
 			return ctrl.Result{}, err
 		}
-		r.logger.Info("updated node", "labels", node.GetLabels(), "updatedLabels", labeler.GetUpdatedLabels(), "taints", node.Spec.Taints)
+		r.logger.Info("updated node", "updatedLabels", labeler.GetUpdatedLabels(), "taints", node.Spec.Taints)
 	}
 
 	return ctrl.Result{}, nil
