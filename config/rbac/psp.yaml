@@ -1,0 +1,40 @@
+---
+  apiVersion: policy/v1beta1
+  kind: PodSecurityPolicy
+  metadata:
+    name: manager
+    namespace: k3os-config-operator-system
+    annotations:
+      seccomp.security.alpha.kubernetes.io/allowedProfileNames: "docker/default,runtime/default"
+      apparmor.security.beta.kubernetes.io/allowedProfileNames: "runtime/default"
+      seccomp.security.alpha.kubernetes.io/defaultProfileName:  "runtime/default"
+      apparmor.security.beta.kubernetes.io/defaultProfileName:  "runtime/default"
+  spec:
+    privileged: false
+    # required to prevent escalations to root
+    allowPrivilegeEscalation: false
+    # this is redundant with non-root + disallow privilege escalation but we can provide it for defense in depth
+    requiredDropCapabilities:
+      - ALL
+    volumes:
+      - secret
+      - downwardAPI
+    hostNetwork: false
+    hostIPC: false
+    hostPID: false
+    runAsUser:
+      # require the container to run without root privileges
+      rule: MustRunAsNonRoot
+    allowedHostPaths:
+      # allows "/foo", "/foo/", "/foo/bar" etc. but disallows "/fool", "/etc/foo" etc., "/foo/../" is never valid
+      # - pathPrefix: "/foo"
+      #   readOnly: true # only allow read-only mounts
+      - pathPrefix: "/var/lib/rancher/k3os"
+        readOnly: false
+    seLinux:
+      rule: RunAsAny
+    supplementalGroups:
+      rule: RunAsAny
+    fsGroup:
+      rule: RunAsAny
+    # readOnlyRootFilesystem: false
