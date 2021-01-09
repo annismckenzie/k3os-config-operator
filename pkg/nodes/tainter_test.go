@@ -120,6 +120,20 @@ func Test_tainter_Reconcile(t *testing.T) {
 			},
 			expectedAddedTaintsAnnotation: "",
 		},
+		{
+			name: "Removed taint stays in the list of taints (issue #10)",
+			args: args{
+				node: taintedNode([]string{"key2=value2:NoExecute"}),
+				configNodeTaints: []string{
+					"key2=value2:NoExecute-",
+					"key4=value4:NoExecute-", // simulate removal of a taint that was removed in a previous reconciliation
+				},
+			},
+			expectedTaints: []string{
+				"existingTaint=existingTaintValue:NoSchedule",
+			},
+			expectedAddedTaintsAnnotation: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
