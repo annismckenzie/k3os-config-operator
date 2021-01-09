@@ -1,0 +1,8 @@
+# adds namespace to all resources
+namespace: k3os-config-operator-system
+
+bases:
+  - ../default
+
+patches:
+  - patches.yaml
