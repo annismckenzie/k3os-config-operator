@@ -10,3 +10,8 @@ import (
 func EnableDevMode() bool {
 	return os.Getenv(consts.DevModeEnvName) == "true"
 }
+
+// EnableNodeConfigFileManagement returns whether the node config file management should be enabled.
+func EnableNodeConfigFileManagement() bool {
+	return os.Getenv(consts.EnableNodeConfigFileManagement) == "true"
+}

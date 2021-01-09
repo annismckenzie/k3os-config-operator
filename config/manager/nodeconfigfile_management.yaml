@@ -1,0 +1,22 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  template:
+    spec:
+      containers:
+        - name: manager
+          env:
+            - name: ENABLE_NODECONFIG_FILE_MANAGEMENT
+              value: "true"
+          volumeMounts:
+            - name: varlibrancherk3osconfigyaml
+              mountPath: /etc/k3osconfig.yaml
+      volumes:
+        - name: varlibrancherk3osconfigyaml
+          hostPath:
+            path: /var/lib/rancher/k3os/config.yaml
+            type: FileOrCreate

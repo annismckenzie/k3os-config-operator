@@ -30,6 +30,7 @@ import (
 	"os"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
+	"github.com/annismckenzie/k3os-config-operator/config"
 	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
 	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
 	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
@@ -103,7 +104,7 @@ func resultError(err error, logger logr.Logger) error {
 	}
 }
 
-func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
+func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
 	// 1. get node name we're running
 	nodeName := consts.NodeName()
 
@@ -124,7 +125,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 
 	// 4. sync node labels
 	labeler := nodes.NewLabeler()
-	if config.Spec.SyncNodeLabels {
+	if k3OSConfig.Spec.SyncNodeLabels {
 		if err = labeler.Reconcile(node, nodeConfig.K3OS.Labels); err == nil {
 			updateNode = true
 		} else if err = resultError(err, r.logger); err != nil {
@@ -134,7 +135,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 
 	// 5. sync node taints
 	tainter := nodes.NewTainter()
-	if config.Spec.SyncNodeTaints {
+	if k3OSConfig.Spec.SyncNodeTaints {
 		if err = tainter.Reconcile(node, nodeConfig.K3OS.Taints); err == nil {
 			updateNode = true
 		} else if err = resultError(err, r.logger); err != nil {
@@ -142,11 +143,26 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 		}
 	}
 
+	// 6. update node only on changes
 	if updateNode {
 		if err = r.updateNode(ctx, node); err != nil {
 			return ctrl.Result{}, err
 		}
 		r.logger.Info("updated node", "updatedLabels", labeler.UpdatedLabels(), "taints", node.Spec.Taints)
+	}
+
+	// 7. update the config file on disk if enabled
+	if config.EnableNodeConfigFileManagement() {
+		configFileUpdater := nodes.NewK3OSConfigFileUpdater()
+		updateErr := configFileUpdater.Update(nodeConfig)
+		if err = resultError(updateErr, r.logger); err != nil {
+			return ctrl.Result{}, err
+		}
+		if updateErr == nil { // would equal errors.ErrSkipUpdate if the update was skipped
+			r.logger.Info("successfully updated node config on disk")
+		} else {
+			r.logger.V(1).Info("skipped updating node config on disk")
+		}
 	}
 
 	return ctrl.Result{}, nil
