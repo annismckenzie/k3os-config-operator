@@ -76,6 +76,18 @@ func (t *tainter) Reconcile(node *corev1.Node, configNodeTaints []string) error 
 		return errors.ErrSkipUpdate
 	}
 
+	// here we check whether any of the taints that should be removed
+	// can even be removed from the node's taints or whether they were
+	// potentially already removed in a previous reconciliation
+	tmp := make([]corev1.Taint, 0, len(taintsToRemove))
+	for _, taintToRemove := range taintsToRemove {
+		// check whether the taint to remove even still exists on the node
+		if taints.TaintExists(node.Spec.Taints, &taintToRemove) {
+			tmp = append(tmp, taintToRemove)
+		}
+	}
+	taintsToRemove = tmp
+
 	_, newNodeTaints, err := taints.ReorganizeTaints(node, false, taintsToAdd, taintsToRemove)
 	if err != nil {
 		return err

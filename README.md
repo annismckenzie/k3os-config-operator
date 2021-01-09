@@ -33,7 +33,7 @@ That Kubernetes operator doesn't exist. At least, it didn't until now. 🤠
 ## Installation
 
 ```sh
-  kubectl apply -f https://raw.githubusercontent.com/annismckenzie/k3os-config-operator/v0.1.0/deploy/operator.yaml
+  kubectl apply -f https://raw.githubusercontent.com/annismckenzie/k3os-config-operator/v0.1.1/deploy/operator.yaml
 ```
 
 

@@ -6,4 +6,4 @@ resources:
 
 images:
   - name: ghcr.io/annismckenzie/k3os-config-operator
-    newTag: v0.1.0
+    newTag: v0.1.1
