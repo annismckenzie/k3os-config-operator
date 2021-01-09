@@ -5,13 +5,13 @@ metadata:
 build:
   local:
     push: false
-  artifacts:
-    - image: ghcr.io/annismckenzie/k3os-config-operator
-      custom:
-        buildCommand: make docker-build
 profiles:
   - name: release
     build:
+      artifacts:
+        - image: ghcr.io/annismckenzie/k3os-config-operator
+          custom:
+            buildCommand: make docker-build
       tagPolicy:
         gitCommit: {}
       local:
