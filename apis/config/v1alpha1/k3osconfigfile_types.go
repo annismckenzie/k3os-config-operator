@@ -31,6 +31,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// K3OSConfigFileKind contains the Kind of the K3OSConfigFile CR.
+const K3OSConfigFileKind = "K3OSConfigFile"
+
 // K3OSConfigFileSectionK3OS contains the spec of the `k3os` section of
 // the K3OS YAML config file.
 type K3OSConfigFileSectionK3OS struct {

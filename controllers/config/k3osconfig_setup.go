@@ -114,7 +114,7 @@ func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr
 	// cannot inject via inject.LoggerInto because `leader` field isn't set at that point
 	r.logger = mgr.GetLogger().
 		WithName("controllers").
-		WithName("K3OSConfig").
+		WithName(configv1alpha1.K3OSConfigKind).
 		WithValues("podName", os.Getenv("HOSTNAME"), "leader", r.leader)
 
 	if r.leader { // if we're building the controller for the leader we can bail here
@@ -167,7 +167,7 @@ func (r *K3OSConfigReconciler) enqueueObjectsOnChanges(object client.Object) []r
 
 	// construct a PartialObjectMetadataList for a list of K3OSConfig resources in the operator's namespace
 	var k3osconfigs metav1.PartialObjectMetadataList
-	k3osconfigs.SetGroupVersionKind(configv1alpha1.GroupVersion.WithKind("K3OSConfigList"))
+	k3osconfigs.SetGroupVersionKind(configv1alpha1.GroupVersion.WithKind(configv1alpha1.K3OSConfigListKind))
 	if err := r.client.List(r.shutdownCtx, &k3osconfigs, client.InNamespace(r.namespace)); err != nil {
 		r.logger.Error(err, "failed to PartialObjectMetadataList all K3OSConfig resources in this namespace")
 	}

@@ -97,11 +97,11 @@ func main() {
 	}
 
 	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(ctx, mgr, configcontroller.RequireLeaderElection()); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "K3OSConfig", "leader", true)
+		setupLog.Error(err, "unable to create controller", "controller", configv1alpha1.K3OSConfigKind, "leader", true)
 		os.Exit(1)
 	}
 	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(ctx, mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "K3OSConfig", "leader", false)
+		setupLog.Error(err, "unable to create controller", "controller", configv1alpha1.K3OSConfigKind, "leader", false)
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
