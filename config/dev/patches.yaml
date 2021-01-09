@@ -9,3 +9,8 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: n3-node
+      containers:
+        - name: manager
+          env:
+            - name: DEV_MODE
+              value: "true"

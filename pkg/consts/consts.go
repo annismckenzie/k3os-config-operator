@@ -12,7 +12,12 @@ const (
 	nodeNameEnvName      = "NODE_NAME" // see config/manager/manager.yaml
 )
 
-const namespaceEnvName = "NAMESPACE"
+// environment variable names
+const (
+	namespaceEnvName               = "NAMESPACE"
+
+	DevModeEnvName = "DEV_MODE"
+)
 
 // GetNamespace returns the configured namespace.
 // That this is fetched from the environment is an implementation detail.

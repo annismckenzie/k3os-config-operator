@@ -28,6 +28,7 @@ import (
 	"flag"
 	"os"
 
+	"github.com/annismckenzie/k3os-config-operator/config"
 	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
 	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -62,7 +63,7 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false, "Enable leader election for controller manager.")
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	ctrl.SetLogger(zap.New(zap.UseDevMode(config.EnableDevMode())))
 	ctx := ctrl.SetupSignalHandler()
 
 	if nodeName := consts.GetNodeName(); nodeName == "" {
