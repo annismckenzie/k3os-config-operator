@@ -9,17 +9,17 @@ build:
     - image: ghcr.io/annismckenzie/k3os-config-operator
       custom:
         buildCommand: make docker-build
-deploy:
-  kustomize:
-    paths:
-      - config/default
 profiles:
-  - name: production
+  - name: release
     build:
       tagPolicy:
         gitCommit: {}
       local:
         push: true
+    deploy:
+      kustomize:
+        paths:
+          - config/default
   - name: dev
     build:
       tagPolicy:

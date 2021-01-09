@@ -41,12 +41,12 @@ dev-delete: tools
 	@ $(SKAFFOLD) delete -p dev
 
 deploy: manifests tools
-	$(SKAFFOLD) run -p production
+	$(SKAFFOLD) run -p release
 
 # This is used to update the manifests into deploy/operator.yaml
-render-production-manifests:
-	@ $(SKAFFOLD) build -q -p production
-	@ $(KUSTOMIZE) build config/production > deploy/operator.yaml
+render-static-manifests:
+	@ $(SKAFFOLD) build -q -p release
+	@ $(KUSTOMIZE) build config/release > deploy/operator.yaml
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
