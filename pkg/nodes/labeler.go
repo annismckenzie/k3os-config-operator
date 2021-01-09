@@ -54,13 +54,15 @@ func (l *labeler) Reconcile(node *corev1.Node, configNodeLabels map[string]strin
 		}
 	}
 
-	if len(configNodeLabels) > 0 {
-		update = true
-		for labelKey, labelValue := range configNodeLabels {
-			addedLabelsMap[labelKey] = struct{}{}
-			nodeLabels[labelKey] = labelValue
-			l.updatedLabels[labelKey] = labelValue
+	for labelKey, labelValue := range configNodeLabels {
+		if _, ok := addedLabelsMap[labelKey]; ok && labelValue == nodeLabels[labelKey] { // label already exists and hasn't been changed, skip
+			continue
 		}
+
+		update = true
+		addedLabelsMap[labelKey] = struct{}{}
+		nodeLabels[labelKey] = labelValue
+		l.updatedLabels[labelKey] = labelValue
 	}
 
 	if update {
