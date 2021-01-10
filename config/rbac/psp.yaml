@@ -3,12 +3,13 @@
   kind: PodSecurityPolicy
   metadata:
     name: manager
-    namespace: k3os-config-operator-system
     annotations:
       seccomp.security.alpha.kubernetes.io/allowedProfileNames: "docker/default,runtime/default"
-      apparmor.security.beta.kubernetes.io/allowedProfileNames: "runtime/default"
       seccomp.security.alpha.kubernetes.io/defaultProfileName:  "runtime/default"
-      apparmor.security.beta.kubernetes.io/defaultProfileName:  "runtime/default"
+
+      # AppArmor isn't enabled by default on k3OS, punting on it for now.
+      # apparmor.security.beta.kubernetes.io/allowedProfileNames: "runtime/default"
+      # apparmor.security.beta.kubernetes.io/defaultProfileName:  "runtime/default"
   spec:
     privileged: false
     # required to prevent escalations to root
@@ -17,14 +18,14 @@
     requiredDropCapabilities:
       - ALL
     volumes:
+      - hostPath
       - secret
       - downwardAPI
     hostNetwork: false
     hostIPC: false
     hostPID: false
     runAsUser:
-      # require the container to run without root privileges
-      rule: MustRunAsNonRoot
+      rule: RunAsAny
     allowedHostPaths:
       # allows "/foo", "/foo/", "/foo/bar" etc. but disallows "/fool", "/etc/foo" etc., "/foo/../" is never valid
       # - pathPrefix: "/foo"
@@ -35,17 +36,9 @@
       # this policy assumes the nodes are using AppArmor rather than SELinux
       rule: RunAsAny
     supplementalGroups:
-      rule: MustRunAs
-      ranges:
-        # forbid adding the root group
-        - min: 1
-          max: 65535
+      rule: RunAsAny
     fsGroup:
-      rule: MustRunAs
-      ranges:
-        # forbid adding the root group
-        - min: 1
-          max: 65535
+      rule: RunAsAny
     # forbid setting any sysctls
     forbiddenSysctls:
       - '*'
