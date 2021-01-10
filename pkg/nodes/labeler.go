@@ -13,7 +13,7 @@ import (
 // Labeler allows reconciling node labels.
 type Labeler interface {
 	Reconcile(*corev1.Node, map[string]string) error
-	GetUpdatedLabels() map[string]string
+	UpdatedLabels() map[string]string
 }
 
 // labeler implements the Labeler interface.
@@ -44,7 +44,7 @@ func (l *labeler) Reconcile(node *corev1.Node, configNodeLabels map[string]strin
 	}
 
 	var update bool
-	addedLabelsMap := getAddedLabels(node)
+	addedLabelsMap := addedLabels(node)
 	for addedLabel := range addedLabelsMap {
 		if _, ok := configNodeLabels[addedLabel]; !ok { // a label that we added was removed, drop it
 			delete(nodeLabels, addedLabel)
@@ -74,18 +74,18 @@ func (l *labeler) Reconcile(node *corev1.Node, configNodeLabels map[string]strin
 	return errors.ErrSkipUpdate
 }
 
-// GetUpdatedLabels returns the updated (added, removed, changed) labels after Reconcile was called.
-func (l *labeler) GetUpdatedLabels() map[string]string {
+// UpdatedLabels returns the updated (added, removed, changed) labels after Reconcile was called.
+func (l *labeler) UpdatedLabels() map[string]string {
 	return l.updatedLabels
 }
 
-func getAddedLabels(node *corev1.Node) map[string]struct{} {
+func addedLabels(node *corev1.Node) map[string]struct{} {
 	if node == nil {
 		return nil
 	}
 
 	addedLabelsMap := map[string]struct{}{}
-	if addedLabelsAnnotation := node.GetAnnotations()[consts.GetAddedLabelsNodeAnnotation()]; addedLabelsAnnotation != "" {
+	if addedLabelsAnnotation := node.GetAnnotations()[consts.AddedLabelsNodeAnnotation()]; addedLabelsAnnotation != "" {
 		for _, addedLabel := range strings.Split(addedLabelsAnnotation, internalConsts.NodeAnnotationValueSeparator) {
 			addedLabelsMap[addedLabel] = struct{}{}
 		}
@@ -104,6 +104,6 @@ func updateAddedLabels(node *corev1.Node, addedLabelsMap map[string]struct{}) {
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
-	annotations[consts.GetAddedLabelsNodeAnnotation()] = strings.Join(addedLabels, internalConsts.NodeAnnotationValueSeparator)
+	annotations[consts.AddedLabelsNodeAnnotation()] = strings.Join(addedLabels, internalConsts.NodeAnnotationValueSeparator)
 	node.Annotations = annotations
 }

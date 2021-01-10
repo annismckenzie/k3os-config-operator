@@ -23,7 +23,7 @@ manager: generate fmt vet
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
-	go run ./main.go
+	DEV_MODE=true HOSTNAME=local NAMESPACE=k3os-config-operator-system go run ./main.go
 
 # Install CRDs into a cluster
 install: manifests kustomize
@@ -64,9 +64,13 @@ vet:
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-# Build the docker image
+# Build the Docker image
 docker-build: test
 	docker buildx build . -t ${IMAGE} --platform ${PLATFORM} --push=${PUSH_IMAGE}
+
+# Build dev Docker image
+docker-build-dev:
+	docker buildx build . -t ${IMAGE} --platform ${PLATFORM} -f Dockerfile.dev --push=${PUSH_IMAGE}
 
 # find or download controller-gen
 # download controller-gen if necessary

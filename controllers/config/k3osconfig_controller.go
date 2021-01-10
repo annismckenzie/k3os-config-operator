@@ -27,8 +27,10 @@ package config
 import (
 	"context"
 	"fmt"
+	"os"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
+	"github.com/annismckenzie/k3os-config-operator/config"
 	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
 	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
 	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
@@ -49,6 +51,9 @@ import (
 // allow operator to update Node objects (the verbs deliberately do not include create and delete)
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;update;patch
 
+// allow operator to use the k3os-config-operator-manager PodSecurityPolicy
+// +kubebuilder:rbac:groups=policy,resources=podsecuritypolicies,verbs=use,resourceNames=k3os-config-operator-manager,namespace=k3os-config-operator-system
+
 // Reconcile handles K3OSConfig CRs.
 func (r *K3OSConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	config := &configv1alpha1.K3OSConfig{}
@@ -60,7 +65,7 @@ func (r *K3OSConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return result, err
 	}
 	config = config.DeepCopy()
-	r.logger.Info("successfully fetched K3OSConfig", "spec", config.Spec)
+	r.logger.V(1).Info("successfully fetched K3OSConfig", "spec", config.Spec)
 
 	switch r.leader {
 	case true: // this instance of the operator won the leader election and can update the K3OSConfig CR
@@ -91,21 +96,24 @@ func resultError(err error, logger logr.Logger) error {
 	case apierrors.IsForbidden(err):
 		logger.Error(err, "failed to execute operation, did you forget to apply some RBAC rules?")
 		return nil
+	case errors.Is(err, os.ErrPermission):
+		logger.Error(err, "failed to execute operation, permission denied was returned")
+		return nil
 	default:
 		return err
 	}
 }
 
-func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
+func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
 	// 1. get node name we're running
-	nodeName := consts.GetNodeName()
+	nodeName := consts.NodeName()
 
 	// 2. get node config
 	nodeConfig, err := r.getNodeConfig(ctx, nodeName)
 	if err != nil {
 		return ctrl.Result{}, resultError(err, r.logger)
 	}
-	r.logger.Info("successfully fetched node config", "config", nodeConfig)
+	r.logger.V(1).Info("successfully fetched node config", "config", nodeConfig)
 
 	// 3. get node
 	node, err := r.getNode(ctx, nodeName)
@@ -117,7 +125,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 
 	// 4. sync node labels
 	labeler := nodes.NewLabeler()
-	if config.Spec.SyncNodeLabels {
+	if k3OSConfig.Spec.SyncNodeLabels {
 		if err = labeler.Reconcile(node, nodeConfig.K3OS.Labels); err == nil {
 			updateNode = true
 		} else if err = resultError(err, r.logger); err != nil {
@@ -127,7 +135,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 
 	// 5. sync node taints
 	tainter := nodes.NewTainter()
-	if config.Spec.SyncNodeTaints {
+	if k3OSConfig.Spec.SyncNodeTaints {
 		if err = tainter.Reconcile(node, nodeConfig.K3OS.Taints); err == nil {
 			updateNode = true
 		} else if err = resultError(err, r.logger); err != nil {
@@ -135,17 +143,32 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, config *con
 		}
 	}
 
+	// 6. update node only on changes
 	if updateNode {
 		if err = r.updateNode(ctx, node); err != nil {
 			return ctrl.Result{}, err
 		}
-		r.logger.Info("updated node", "labels", node.GetLabels(), "updatedLabels", labeler.GetUpdatedLabels(), "taints", node.Spec.Taints)
+		r.logger.Info("updated node", "updatedLabels", labeler.UpdatedLabels(), "taints", node.Spec.Taints)
+	}
+
+	// 7. update the config file on disk if enabled
+	if config.EnableNodeConfigFileManagement() {
+		configFileUpdater := nodes.NewK3OSConfigFileUpdater()
+		updateErr := configFileUpdater.Update(nodeConfig)
+		if err = resultError(updateErr, r.logger); err != nil {
+			return ctrl.Result{}, err
+		}
+		if updateErr == nil { // would equal errors.ErrSkipUpdate if the update was skipped
+			r.logger.Info("successfully updated node config on disk")
+		} else {
+			r.logger.V(1).Info("skipped updating node config on disk")
+		}
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *K3OSConfigReconciler) getNodeConfig(ctx context.Context, nodeName string) (*nodes.Config, error) {
+func (r *K3OSConfigReconciler) getNodeConfig(ctx context.Context, nodeName string) (*configv1alpha1.K3OSConfigFileSpec, error) {
 	secret, err := r.clientset.CoreV1().Secrets(r.namespace).Get(ctx, consts.NodeConfigSecretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -155,7 +178,7 @@ func (r *K3OSConfigReconciler) getNodeConfig(ctx context.Context, nodeName strin
 		err = fmt.Errorf("failed to find node %q in config (keys: %v)", nodeName, secretKeys(secret))
 		return nil, err
 	}
-	return nodes.ParseConfig(nodeConfigBytes)
+	return configv1alpha1.ParseConfigYAML(nodeConfigBytes)
 }
 
 func (r *K3OSConfigReconciler) getNode(ctx context.Context, nodeName string) (*corev1.Node, error) {

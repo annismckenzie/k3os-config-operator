@@ -1,0 +1,20 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: n3-node
+      containers:
+        - name: manager
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 256Mi
+          env:
+            - name: DEV_MODE
+              value: "true"

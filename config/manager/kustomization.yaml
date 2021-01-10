@@ -1,2 +1,5 @@
 resources:
 - manager.yaml
+
+patches:
+- nodeconfigfile_management.yaml

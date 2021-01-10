@@ -97,7 +97,7 @@ func (w *nonLeaderLeaseNeedingRunnableWrapper) NeedLeaderElection() bool {
 func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr ctrl.Manager, options ...Option) error {
 	r.nodeLister = nodes.NewNodeLister()
 	r.shutdownCtx = shutdownCtx
-	r.namespace = consts.GetNamespace()
+	r.namespace = consts.Namespace()
 
 	clientset, err := kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
@@ -114,7 +114,7 @@ func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr
 	// cannot inject via inject.LoggerInto because `leader` field isn't set at that point
 	r.logger = mgr.GetLogger().
 		WithName("controllers").
-		WithName("K3OSConfig").
+		WithName(configv1alpha1.K3OSConfigKind).
 		WithValues("podName", os.Getenv("HOSTNAME"), "leader", r.leader)
 
 	if r.leader { // if we're building the controller for the leader we can bail here
@@ -143,7 +143,7 @@ func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr
 }
 
 func namePredicateForNode() predicate.Predicate {
-	nodeName := consts.GetNodeName()
+	nodeName := consts.NodeName()
 
 	return predicate.NewPredicateFuncs(func(o client.Object) bool {
 		return o.GetName() == nodeName
@@ -151,8 +151,7 @@ func namePredicateForNode() predicate.Predicate {
 }
 
 func labelSelectorPredicateForSecret() predicate.Predicate {
-	labelSelectorForSecret := metav1.AddLabelToSelector(&metav1.LabelSelector{}, "app.kubernetes.io/managed-by", "k3os-config-operator")
-	p, err := predicate.LabelSelectorPredicate(*labelSelectorForSecret)
+	p, err := predicate.LabelSelectorPredicate(consts.LabelSelectorForNodeConfigFileSecret())
 	if err != nil {
 		// we're panicking here in order to crash the operator because if this doesn't work there's no
 		// recourse (and indicates a programmer error when building the label selector above)
@@ -164,11 +163,11 @@ func labelSelectorPredicateForSecret() predicate.Predicate {
 // enqueueObjectsOnChanges is used to enqueue all K3OSConfig resources in the operator's namespace when
 // changes happen to the watched resources (secrets, nodes).
 func (r *K3OSConfigReconciler) enqueueObjectsOnChanges(object client.Object) []reconcile.Request {
-	r.logger.Info("change to a watched object noticed", "namespace/name", client.ObjectKeyFromObject(object).String())
+	r.logger.V(1).Info("change to a watched object noticed", "namespace/name", client.ObjectKeyFromObject(object).String())
 
 	// construct a PartialObjectMetadataList for a list of K3OSConfig resources in the operator's namespace
 	var k3osconfigs metav1.PartialObjectMetadataList
-	k3osconfigs.SetGroupVersionKind(configv1alpha1.GroupVersion.WithKind("K3OSConfigList"))
+	k3osconfigs.SetGroupVersionKind(configv1alpha1.GroupVersion.WithKind(configv1alpha1.K3OSConfigListKind))
 	if err := r.client.List(r.shutdownCtx, &k3osconfigs, client.InNamespace(r.namespace)); err != nil {
 		r.logger.Error(err, "failed to PartialObjectMetadataList all K3OSConfig resources in this namespace")
 	}
@@ -177,7 +176,7 @@ func (r *K3OSConfigReconciler) enqueueObjectsOnChanges(object client.Object) []r
 	for i, item := range k3osconfigs.Items {
 		requests[i] = reconcile.Request{NamespacedName: types.NamespacedName{Name: item.GetName(), Namespace: item.GetNamespace()}}
 	}
-	r.logger.Info("enqueuing requests for all K3OSConfig resources in this namespace", "namespace", r.namespace, "requests", requests)
+	r.logger.V(1).Info("enqueuing requests for all K3OSConfig resources in this namespace", "namespace", r.namespace, "requests", requests)
 	return requests
 }
 

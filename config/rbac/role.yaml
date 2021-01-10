@@ -53,3 +53,11 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - policy
+  resourceNames:
+  - k3os-config-operator-manager
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use

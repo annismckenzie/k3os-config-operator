@@ -28,6 +28,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// K3OSConfigKind contains the Kind of the K3OSConfig CR.
+const K3OSConfigKind = "K3OSConfig"
+
+// K3OSConfigListKind contains the Kind of a list of K3OSConfig CRs.
+const K3OSConfigListKind = "K3OSConfigList"
+
 // K3OSConfigSpec defines the desired state of K3OSConfig.
 type K3OSConfigSpec struct {
 	// SyncNodeLabels enables syncing node labels set in the K3OS config.yaml.

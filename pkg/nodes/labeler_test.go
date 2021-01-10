@@ -183,12 +183,12 @@ func Test_labeler_Reconcile(t *testing.T) {
 					}
 				}
 			}
-			updatedLabels := l.GetUpdatedLabels()
+			updatedLabels := l.UpdatedLabels()
 			if len(tt.updatedLabels) != len(updatedLabels) {
 				t.Errorf("labeler.GetUpdatedLabels() expected updated labels = %v (len: %d), got %v (len: %d)",
 					tt.updatedLabels, len(tt.updatedLabels), updatedLabels, len(updatedLabels))
 			}
-			addedLabelsMap := getAddedLabels(tt.args.node)
+			addedLabelsMap := addedLabels(tt.args.node)
 			var addedLabels []string
 			for addedLabel := range addedLabelsMap {
 				addedLabels = append(addedLabels, addedLabel)

@@ -27,9 +27,8 @@ ENV GO111MODULE=on
 RUN --mount=type=cache,target=/root/.cache/go-build \
   GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -a -o manager main.go
 
-# Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:latest
+FROM ubuntu:20.04
 WORKDIR /
 COPY --from=builder /workspace/manager .
 

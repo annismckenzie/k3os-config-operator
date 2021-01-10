@@ -16,6 +16,83 @@ metadata:
   labels:
     app: k3os-config-operator
     app.kubernetes.io/name: k3os-config-operator
+  name: k3osconfigfiles.config.operators.annismckenzie.github.com
+spec:
+  group: config.operators.annismckenzie.github.com
+  names:
+    kind: K3OSConfigFile
+    listKind: K3OSConfigFileList
+    plural: k3osconfigfiles
+    singular: k3osconfigfile
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: K3OSConfigFile is the Schema for the k3osconfigfiles API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: K3OSConfigFileSpec defines the desired state of K3OSConfigFile.
+              Use `ParseConfigYAML()` to parse a k3OS config.yaml file.
+            properties:
+              hostname:
+                type: string
+              k3os:
+                description: K3OSConfigFileSectionK3OS contains the spec of the `k3os`
+                  section of the K3OS YAML config file.
+                properties:
+                  labels:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  taints:
+                    items:
+                      type: string
+                    type: array
+                required:
+                - labels
+                - taints
+                type: object
+            required:
+            - hostname
+            - k3os
+            type: object
+          status:
+            description: K3OSConfigFileStatus defines the observed state of K3OSConfigFile.
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  labels:
+    app: k3os-config-operator
+    app.kubernetes.io/name: k3os-config-operator
   name: k3osconfigs.config.operators.annismckenzie.github.com
 spec:
   group: config.operators.annismckenzie.github.com
