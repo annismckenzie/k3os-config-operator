@@ -27,6 +27,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"os"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
 	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
@@ -90,6 +91,9 @@ func resultError(err error, logger logr.Logger) error {
 		return nil
 	case apierrors.IsForbidden(err):
 		logger.Error(err, "failed to execute operation, did you forget to apply some RBAC rules?")
+		return nil
+	case errors.Is(err, os.ErrPermission):
+		logger.Error(err, "failed to execute operation, permission denied was returned")
 		return nil
 	default:
 		return err
