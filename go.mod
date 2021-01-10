@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/go-logr/logr v0.3.0
-	github.com/onsi/ginkgo v1.14.1
+	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.2
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	k8s.io/api v0.19.2
