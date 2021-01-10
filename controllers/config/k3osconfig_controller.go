@@ -50,6 +50,9 @@ import (
 // allow operator to update Node objects (the verbs deliberately do not include create and delete)
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;update;patch
 
+// allow operator to use the k3os-config-operator-manager PodSecurityPolicy
+// +kubebuilder:rbac:groups=policy,resources=podsecuritypolicies,verbs=use,resourceNames=k3os-config-operator-manager,namespace=k3os-config-operator-system
+
 // Reconcile handles K3OSConfig CRs.
 func (r *K3OSConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	config := &configv1alpha1.K3OSConfig{}
