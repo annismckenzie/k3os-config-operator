@@ -43,4 +43,4 @@ That Kubernetes operator doesn't exist. At least, it didn't until now. 🤠
 2. Run `make render-static-manifests`. This will build and push the new multi-arch image.
 3. Update the installation path above with the new tag.
 4. Commit the updated `deploy/operator.yaml` and the update to the README.
-5. Delete the local tag, tag again, then push using `git push origin --tags`.
+5. Delete the local tag, merge the release PR, tag again on the `main` branch, then push using `git push origin --tags`.
