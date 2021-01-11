@@ -25,13 +25,17 @@ SOFTWARE.
 package config
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
+	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
@@ -60,9 +64,15 @@ func TestAPIs(t *testing.T) {
 var _ = BeforeSuite(func(done Done) {
 	logf.SetLogger(zap.New(zap.UseDevMode(true), zap.WriteTo(GinkgoWriter)))
 
+	customAPIServerFlags := []string{
+		"--enable-admission-plugins=PodSecurityPolicy",
+	}
+	apiServerFlags := append(envtest.DefaultKubeAPIServerFlags, customAPIServerFlags...)
+
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths:  []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		KubeAPIServerFlags: apiServerFlags,
 	}
 
 	var err error
@@ -75,10 +85,32 @@ var _ = BeforeSuite(func(done Done) {
 
 	// +kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	ctx, cancel := context.WithCancel(context.Background())
+
+	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
+		Scheme: scheme.Scheme,
+	})
 	Expect(err).ToNot(HaveOccurred())
+
+	var clientset *kubernetes.Clientset
+	clientset, err = kubernetes.NewForConfig(k8sManager.GetConfig())
+	Expect(err).ToNot(HaveOccurred())
+
+	err = nodes.NewNodeInformer(ctx, clientset)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&K3OSConfigReconciler{}).SetupWithManager(ctx, k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	go func() {
+		err = k8sManager.Start(ctx)
+		Expect(err).ToNot(HaveOccurred())
+	}()
+
+	k8sClient = k8sManager.GetClient()
 	Expect(k8sClient).ToNot(BeNil())
 
+	cancel()
 	close(done)
 }, 60)
 
