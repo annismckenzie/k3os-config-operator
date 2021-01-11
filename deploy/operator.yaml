@@ -149,6 +149,43 @@ status:
   conditions: []
   storedVersions: []
 ---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: docker/default,runtime/default
+    seccomp.security.alpha.kubernetes.io/defaultProfileName: runtime/default
+  labels:
+    app: k3os-config-operator
+    app.kubernetes.io/name: k3os-config-operator
+  name: k3os-config-operator-manager
+spec:
+  allowPrivilegeEscalation: false
+  allowedHostPaths:
+  - pathPrefix: /var/lib/rancher/k3os
+    readOnly: false
+  forbiddenSysctls:
+  - '*'
+  fsGroup:
+    rule: RunAsAny
+  hostIPC: false
+  hostNetwork: false
+  hostPID: false
+  privileged: false
+  readOnlyRootFilesystem: false
+  requiredDropCapabilities:
+  - ALL
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - hostPath
+  - secret
+  - downwardAPI
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -210,6 +247,14 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - policy
+  resourceNames:
+  - k3os-config-operator-manager
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -389,6 +434,8 @@ spec:
         command:
         - /manager
         env:
+        - name: ENABLE_NODECONFIG_FILE_MANAGEMENT
+          value: "true"
         - name: NODE_NAME
           valueFrom:
             fieldRef:
@@ -406,4 +453,12 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+        volumeMounts:
+        - mountPath: /etc/k3osconfig.yaml
+          name: varlibrancherk3osconfigyaml
       terminationGracePeriodSeconds: 10
+      volumes:
+      - hostPath:
+          path: /var/lib/rancher/k3os/config.yaml
+          type: FileOrCreate
+        name: varlibrancherk3osconfigyaml
