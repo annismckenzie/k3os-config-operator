@@ -24,6 +24,7 @@ SOFTWARE.
 
 package config
 
+/*
 import (
 	"path/filepath"
 	"testing"
@@ -87,3 +88,4 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
+*/
