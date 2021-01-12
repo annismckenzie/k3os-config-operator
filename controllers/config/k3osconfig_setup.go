@@ -31,7 +31,6 @@ import (
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
 	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
-	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,6 +73,15 @@ func RequireLeaderElection() Option {
 	return &requireLeaderElectionOpt{}
 }
 
+type withNodeListerOpt struct {
+	nodeLister listersv1.NodeLister
+}
+
+// WithNodeLister returns an option to make the node lister available to the controller.
+func WithNodeLister(nodeLister listersv1.NodeLister) Option {
+	return &withNodeListerOpt{nodeLister: nodeLister}
+}
+
 // https://github.com/kubernetes-sigs/controller-runtime/pull/921#issuecomment-662187521 doesn't work
 // but there's always another way. 🥁 🥁 🥁
 type nonLeaderLeaseNeedingManagerWrapper struct {
@@ -95,7 +103,6 @@ func (w *nonLeaderLeaseNeedingRunnableWrapper) NeedLeaderElection() bool {
 
 // SetupWithManager is called in main to setup the K3OSConfig reconiler with the manager as a non-leader.
 func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr ctrl.Manager, options ...Option) error {
-	r.nodeLister = nodes.NewNodeLister()
 	r.shutdownCtx = shutdownCtx
 	r.namespace = consts.Namespace()
 
@@ -108,6 +115,9 @@ func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr
 	for _, option := range options {
 		if _, ok := option.(*requireLeaderElectionOpt); ok {
 			r.leader = true
+		}
+		if nodeListerOpt, ok := option.(*withNodeListerOpt); ok {
+			r.nodeLister = nodeListerOpt.nodeLister
 		}
 	}
 

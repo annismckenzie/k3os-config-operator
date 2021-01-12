@@ -46,9 +46,6 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-// These tests use Ginkgo (BDD-style Go testing framework). Refer to
-// http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
-
 var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
@@ -99,7 +96,8 @@ var _ = BeforeSuite(func(done Done) {
 	err = nodes.NewNodeInformer(ctx, clientset)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&K3OSConfigReconciler{}).SetupWithManager(ctx, k8sManager)
+	nodeListerOpt := WithNodeLister(nodes.NewNodeLister())
+	err = (&K3OSConfigReconciler{}).SetupWithManager(ctx, k8sManager, nodeListerOpt)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
