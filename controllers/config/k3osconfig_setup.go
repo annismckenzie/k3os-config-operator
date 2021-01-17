@@ -66,9 +66,7 @@ type K3OSConfigReconciler struct {
 // Option denotes an option for configuring this controller.
 type Option interface{}
 
-type requireLeaderElectionOpt struct {
-	requireLeaderElection bool
-}
+type requireLeaderElectionOpt struct{}
 
 // RequireLeaderElection returns an option that requires the operator being the leader to run this controller instance.
 func RequireLeaderElection() Option {

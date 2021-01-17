@@ -65,7 +65,6 @@ const (
 	dummyNodeName           = "dummy1"
 
 	timeout  = time.Second * 10
-	duration = time.Second * 10
 	interval = time.Millisecond * 250
 )
 
@@ -230,10 +229,7 @@ var _ = Describe("K3OSConfig controller", func() {
 		Expect(k8sClient.Create(ctx, k3OSConfig)).Should(Succeed())
 		Eventually(func() bool { // retry getting the newly created K3OSConfig CR because creation may not happen immediately
 			err := k8sClient.Get(ctx, types.NamespacedName{Name: k3OSConfigName, Namespace: k3OSConfigNamespaceName}, k3OSConfig)
-			if err != nil {
-				return false
-			}
-			return true
+			return err == nil
 		}, timeout, interval).Should(BeTrue())
 		Expect(k3OSConfig.Spec.SyncNodeLabels).Should(BeTrue())
 	})
@@ -280,29 +276,17 @@ func createTestNodeConfigSecret(secret *corev1.Secret) {
 	Expect(k8sClient.Create(ctx, secret)).Should(Succeed())
 
 	Eventually(func() bool {
-		err := k8sClient.Get(ctx, types.NamespacedName{Name: secret.GetName(), Namespace: secret.GetNamespace()}, secret)
-		if err != nil {
-			return false
-		}
-		return true
+		return k8sClient.Get(ctx, types.NamespacedName{Name: secret.GetName(), Namespace: secret.GetNamespace()}, secret) == nil
 	}, timeout, interval).Should(BeTrue())
 }
 
 func createNode(node *corev1.Node) *corev1.Node {
 	createdNode := &corev1.Node{}
 	Eventually(func() bool {
-		err := k8sClient.Create(ctx, node)
-		if err != nil {
-			return false
-		}
-		return true
+		return k8sClient.Create(ctx, node) == nil
 	}, timeout, interval).Should(BeTrue())
 	Eventually(func() bool {
-		err := k8sClient.Get(ctx, types.NamespacedName{Name: node.GetName()}, createdNode)
-		if err != nil {
-			return false
-		}
-		return true
+		return k8sClient.Get(ctx, types.NamespacedName{Name: node.GetName()}, createdNode) == nil
 	}, timeout, interval).Should(BeTrue())
 
 	return createdNode

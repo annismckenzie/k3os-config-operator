@@ -30,7 +30,9 @@ func defaultNode() *corev1.Node {
 func labeledNode(updateLabels map[string]string) *corev1.Node {
 	node := defaultNode()
 	l := NewLabeler()
-	l.Reconcile(node, updateLabels)
+	if err := l.Reconcile(node, updateLabels); err != nil {
+		panic(err)
+	}
 	return node
 }
 

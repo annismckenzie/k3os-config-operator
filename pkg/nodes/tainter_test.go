@@ -24,7 +24,9 @@ func defaultTaintedNode() *corev1.Node {
 func taintedNode(nodeTaints []string) *corev1.Node {
 	node := defaultTaintedNode()
 	l := NewTainter()
-	l.Reconcile(node, nodeTaints)
+	if err := l.Reconcile(node, nodeTaints); err != nil {
+		panic(err)
+	}
 	return node
 }
 
