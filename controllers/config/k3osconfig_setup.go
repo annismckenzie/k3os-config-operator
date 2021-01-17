@@ -32,6 +32,7 @@ import (
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
 	"github.com/annismckenzie/k3os-config-operator/config"
 	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
+	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +47,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
@@ -115,6 +115,8 @@ func (w *nonLeaderLeaseNeedingRunnableWrapper) NeedLeaderElection() bool {
 // SetupWithManager is called in main to setup the K3OSConfig reconiler with the manager as a non-leader.
 func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr ctrl.Manager, options ...Option) error {
 	r.shutdownCtx = shutdownCtx
+	r.client = mgr.GetClient()
+	r.scheme = mgr.GetScheme()
 
 	clientset, err := kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
@@ -138,7 +140,6 @@ func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr
 		return errors.New("the configuration must be provided via the WithConfiguration option")
 	}
 
-	// cannot inject via inject.LoggerInto because `leader` field isn't set at that point
 	r.namespace = r.configuration.Namespace
 	r.logger = mgr.GetLogger().
 		WithName("controllers").
@@ -204,20 +205,4 @@ func (r *K3OSConfigReconciler) enqueueObjectsOnChanges(object client.Object) []r
 	}
 	r.logger.V(1).Info("enqueuing requests for all K3OSConfig resources in this namespace", "namespace", r.namespace, "requests", requests)
 	return requests
-}
-
-// Interface implementations for dependency injection
-var _ inject.Client = (*K3OSConfigReconciler)(nil)
-var _ inject.Scheme = (*K3OSConfigReconciler)(nil)
-
-// InjectClient satisfies the inject.Client interface.
-func (r *K3OSConfigReconciler) InjectClient(client client.Client) error {
-	r.client = client
-	return nil
-}
-
-// InjectScheme satisfies the inject.Scheme interface.
-func (r *K3OSConfigReconciler) InjectScheme(scheme *runtime.Scheme) error {
-	r.scheme = scheme
-	return nil
 }
