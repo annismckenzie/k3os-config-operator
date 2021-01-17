@@ -8,26 +8,31 @@ import (
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
 	"github.com/annismckenzie/k3os-config-operator/config"
-	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
 	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
 )
 
 // K3OSConfigFileUpdater handles updating the k3OS config file on disk.
-type K3OSConfigFileUpdater struct{}
-
-// NewK3OSConfigFileUpdater returns an initialized K3OSConfigFileUpdater.
-func NewK3OSConfigFileUpdater() *K3OSConfigFileUpdater {
-	return &K3OSConfigFileUpdater{}
+type K3OSConfigFileUpdater interface {
+	Update(*configv1alpha1.K3OSConfigFileSpec) error
 }
 
-func (*K3OSConfigFileUpdater) enabled() bool {
-	return config.EnableNodeConfigFileManagement()
+// NewK3OSConfigFileUpdater returns an initialized K3OSConfigFileUpdater.
+func NewK3OSConfigFileUpdater(configuration *config.Configuration) K3OSConfigFileUpdater {
+	return &k3OSConfigFileUpdater{configuration: configuration}
+}
+
+type k3OSConfigFileUpdater struct {
+	configuration *config.Configuration
+}
+
+func (u *k3OSConfigFileUpdater) enabled() bool {
+	return u.configuration.EnableNodeConfigFileManagement()
 }
 
 // Update handles updating the k3OS config file on disk.
 // It can be called anytime and will return errors.ErrSkipUpdate if
 // the feature isn't enabled or the config file is already up to date.
-func (u *K3OSConfigFileUpdater) Update(configFileSpec *configv1alpha1.K3OSConfigFileSpec) (err error) {
+func (u *k3OSConfigFileUpdater) Update(configFileSpec *configv1alpha1.K3OSConfigFileSpec) (err error) {
 	if !u.enabled() {
 		return errors.ErrSkipUpdate
 	}
@@ -38,7 +43,7 @@ func (u *K3OSConfigFileUpdater) Update(configFileSpec *configv1alpha1.K3OSConfig
 
 	// open the config file for read-write
 	var configFile *os.File
-	if configFile, err = os.OpenFile(consts.NodeConfigFileLocation, os.O_RDWR, 0); err != nil {
+	if configFile, err = os.OpenFile(u.configuration.NodeConfigFileLocation, os.O_RDWR, 0); err != nil {
 		return fmt.Errorf("failed to open node config file: %w", err)
 	}
 	defer func() {

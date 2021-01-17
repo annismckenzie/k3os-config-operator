@@ -30,8 +30,6 @@ import (
 	"os"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
-	"github.com/annismckenzie/k3os-config-operator/config"
-	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
 	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
 	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
 	"github.com/go-logr/logr"
@@ -106,7 +104,7 @@ func resultError(err error, logger logr.Logger) error {
 
 func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
 	// 1. get node name we're running
-	nodeName := consts.NodeName()
+	nodeName := r.configuration.NodeName
 
 	// 2. get node config
 	nodeConfig, err := r.getNodeConfig(ctx, nodeName)
@@ -169,7 +167,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig 
 }
 
 func (r *K3OSConfigReconciler) getNodeConfig(ctx context.Context, nodeName string) (*configv1alpha1.K3OSConfigFileSpec, error) {
-	secret, err := r.clientset.CoreV1().Secrets(r.namespace).Get(ctx, consts.NodeConfigSecretName, metav1.GetOptions{})
+	secret, err := r.clientset.CoreV1().Secrets(r.namespace).Get(ctx, r.configuration.NodeConfigSecretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

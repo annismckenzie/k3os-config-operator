@@ -12,6 +12,8 @@ spec:
           env:
             - name: ENABLE_NODECONFIG_FILE_MANAGEMENT
               value: "true"
+            - name: NODECONFIG_FILE_LOCATION
+              value: /etc/k3osconfig.yaml # keep this in sync with the mount path below
           volumeMounts:
             - name: varlibrancherk3osconfigyaml
               mountPath: /etc/k3osconfig.yaml
