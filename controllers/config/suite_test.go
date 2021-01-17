@@ -68,11 +68,13 @@ const (
 	interval = time.Millisecond * 250
 )
 
-var cfg *rest.Config
-var k8sClient client.Client
-var k8sManager manager.Manager
-var testEnv *envtest.Environment
-var dummyNode1 = &corev1.Node{}
+var (
+	cfg        *rest.Config
+	k8sClient  client.Client
+	k8sManager manager.Manager
+	testEnv    *envtest.Environment
+	dummyNode1 = &corev1.Node{}
+)
 
 var (
 	ctx    context.Context

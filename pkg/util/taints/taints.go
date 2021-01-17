@@ -128,7 +128,7 @@ func ParseTaints(spec []string) ([]corev1.Taint, []corev1.Taint, error) {
 
 // ReorganizeTaints returns the updated set of taints, taking into account old taints that were not updated,
 // old taints that were updated, old taints that were deleted, and new taints.
-func ReorganizeTaints(node *corev1.Node, overwrite bool, taintsToAdd []corev1.Taint, taintsToRemove []corev1.Taint) (string, []corev1.Taint, error) {
+func ReorganizeTaints(node *corev1.Node, overwrite bool, taintsToAdd, taintsToRemove []corev1.Taint) (string, []corev1.Taint, error) {
 	newTaints := append([]corev1.Taint{}, taintsToAdd...)
 	oldTaints := node.Spec.Taints
 	// add taints that already existing but not updated to newTaints
@@ -215,7 +215,7 @@ func TaintExists(taints []corev1.Taint, taintToFind *corev1.Taint) bool {
 	return false
 }
 
-func TaintSetDiff(t1, t2 []corev1.Taint) (taintsToAdd []*corev1.Taint, taintsToRemove []*corev1.Taint) {
+func TaintSetDiff(t1, t2 []corev1.Taint) (taintsToAdd, taintsToRemove []*corev1.Taint) {
 	for _, taint := range t1 {
 		if !TaintExists(t2, &taint) {
 			t := taint
