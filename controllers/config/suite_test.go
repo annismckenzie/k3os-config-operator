@@ -59,7 +59,7 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-// define utility constants for namespace name and testing timeouts/durations and intervals
+// Define utility constants for namespace name and testing timeouts/durations and intervals.
 const (
 	k3OSConfigNamespaceName = "test-k3osconfig-namespace"
 	dummyNodeName           = "dummy1"

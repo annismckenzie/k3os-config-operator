@@ -6,7 +6,7 @@ import (
 	flags "github.com/jessevdk/go-flags"
 )
 
-// InitializeConfiguration initializes the configuration from CLI flags and the environment
+// InitializeConfiguration initializes the configuration from CLI flags and the environment.
 func InitializeConfiguration(parseOptions ...flags.Options) (*Configuration, error) {
 	config := &Configuration{}
 	var options flags.Options = flags.Default
@@ -16,10 +16,10 @@ func InitializeConfiguration(parseOptions ...flags.Options) (*Configuration, err
 			options |= option
 		}
 	}
-	return config, parseWithOptions("Options", config, options)
+	return config, parseWithOptions(config, options)
 }
 
-func parseWithOptions(name string, c interface{}, parseOptions flags.Options) error {
+func parseWithOptions(c interface{}, parseOptions flags.Options) error {
 	_, err := flags.NewParser(c, parseOptions).Parse()
 	if e, ok := err.(*flags.Error); ok {
 		// catch help message

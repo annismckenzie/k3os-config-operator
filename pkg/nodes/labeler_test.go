@@ -166,6 +166,7 @@ func Test_labeler_Reconcile(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			l := NewLabeler()
 			err := l.Reconcile(tt.args.node, tt.args.configNodeLabels)

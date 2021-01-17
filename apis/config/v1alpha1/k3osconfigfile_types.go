@@ -57,11 +57,6 @@ func (s *K3OSConfigFileSpec) Validate() error {
 	return nil
 }
 
-// MarshalYAML returns the YAML representation of the config file.
-func (s *K3OSConfigFile) MarshalYAML() ([]byte, error) {
-	return yaml.Marshal(s.Spec)
-}
-
 // ParseConfigYAML parses the data of a k3OS config.yaml into a K3OSConfigFileSpec object.
 func ParseConfigYAML(data []byte) (*K3OSConfigFileSpec, error) {
 	if len(data) == 0 {
@@ -93,6 +88,11 @@ type K3OSConfigFile struct {
 
 	Spec   K3OSConfigFileSpec   `json:"spec,omitempty"`
 	Status K3OSConfigFileStatus `json:"status,omitempty"`
+}
+
+// MarshalYAML returns the YAML representation of the config file.
+func (s *K3OSConfigFile) MarshalYAML() ([]byte, error) {
+	return yaml.Marshal(s.Spec)
 }
 
 // +kubebuilder:object:root=true

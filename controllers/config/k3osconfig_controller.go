@@ -113,7 +113,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig 
 	r.logger.V(1).Info("successfully fetched node config", "config", nodeConfig)
 
 	// 3. get node
-	node, err := r.getNode(ctx, nodeName)
+	node, err := r.getNode(nodeName)
 	if err != nil {
 		return ctrl.Result{}, resultError(err, r.logger)
 	}
@@ -125,7 +125,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig 
 	if k3OSConfig.Spec.SyncNodeLabels {
 		if err = labeler.Reconcile(node, nodeConfig.K3OS.Labels); err == nil {
 			updateNode = true
-		} else if err = resultError(err, r.logger); err != nil {
+		} else if err := resultError(err, r.logger); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -135,7 +135,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig 
 	if k3OSConfig.Spec.SyncNodeTaints {
 		if err = tainter.Reconcile(node, nodeConfig.K3OS.Taints); err == nil {
 			updateNode = true
-		} else if err = resultError(err, r.logger); err != nil {
+		} else if err := resultError(err, r.logger); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -158,7 +158,7 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig 
 	// 7. update the config file on disk (if enabled – which is checked inside the updater)
 	configFileUpdater := nodes.NewK3OSConfigFileUpdater(r.configuration)
 	updateErr := configFileUpdater.Update(nodeConfig)
-	if err = resultError(updateErr, r.logger); err != nil {
+	if err := resultError(updateErr, r.logger); err != nil {
 		return ctrl.Result{}, err
 	}
 	switch {
@@ -185,7 +185,7 @@ func (r *K3OSConfigReconciler) getNodeConfig(ctx context.Context, nodeName strin
 	return configv1alpha1.ParseConfigYAML(nodeConfigBytes)
 }
 
-func (r *K3OSConfigReconciler) getNode(ctx context.Context, nodeName string) (*corev1.Node, error) {
+func (r *K3OSConfigReconciler) getNode(nodeName string) (*corev1.Node, error) {
 	node, err := r.nodeLister.Get(nodeName)
 	if err != nil {
 		return nil, err

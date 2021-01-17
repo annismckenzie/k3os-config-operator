@@ -147,6 +147,7 @@ func deleteTaints(taintsToRemove []corev1.Taint, newTaints *[]corev1.Taint) ([]e
 	allErrs := []error{}
 	var removed bool
 	for _, taintToRemove := range taintsToRemove {
+		taintToRemove := taintToRemove
 		if len(taintToRemove.Effect) > 0 {
 			*newTaints, removed = DeleteTaint(*newTaints, &taintToRemove)
 		} else {
@@ -164,6 +165,7 @@ func deleteTaints(taintsToRemove []corev1.Taint, newTaints *[]corev1.Taint) ([]e
 func addTaints(oldTaints []corev1.Taint, newTaints *[]corev1.Taint) bool {
 	for _, oldTaint := range oldTaints {
 		existsInNew := false
+		oldTaint := oldTaint
 		for _, taint := range *newTaints {
 			if taint.MatchTaint(&oldTaint) {
 				existsInNew = true
@@ -177,7 +179,7 @@ func addTaints(oldTaints []corev1.Taint, newTaints *[]corev1.Taint) bool {
 	return len(oldTaints) != len(*newTaints)
 }
 
-// DeleteTaintsByKey removes all the taints that have the same key to given taintKey
+// DeleteTaintsByKey removes all the taints that have the same key to given taintKey.
 func DeleteTaintsByKey(taints []corev1.Taint, taintKey string) ([]corev1.Taint, bool) {
 	newTaints := []corev1.Taint{}
 	deleted := false
@@ -217,6 +219,7 @@ func TaintExists(taints []corev1.Taint, taintToFind *corev1.Taint) bool {
 
 func TaintSetDiff(t1, t2 []corev1.Taint) (taintsToAdd, taintsToRemove []*corev1.Taint) {
 	for _, taint := range t1 {
+		taint := taint
 		if !TaintExists(t2, &taint) {
 			t := taint
 			taintsToAdd = append(taintsToAdd, &t)
@@ -224,6 +227,7 @@ func TaintSetDiff(t1, t2 []corev1.Taint) (taintsToAdd, taintsToRemove []*corev1.
 	}
 
 	for _, taint := range t2 {
+		taint := taint
 		if !TaintExists(t1, &taint) {
 			t := taint
 			taintsToRemove = append(taintsToRemove, &t)

@@ -92,7 +92,7 @@ func WithConfiguration(configuration *config.Configuration) Option {
 }
 
 // https://github.com/kubernetes-sigs/controller-runtime/pull/921#issuecomment-662187521 doesn't work
-// but there's always another way. 🥁 🥁 🥁
+// but there's always another way 🥁 🥁 🥁.
 type nonLeaderLeaseNeedingManagerWrapper struct {
 	manager.Manager
 }

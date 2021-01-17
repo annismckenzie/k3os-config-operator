@@ -47,6 +47,7 @@ func (t *tainter) Reconcile(node *corev1.Node, configNodeTaints []string) error 
 	for existingTaint := range addedTaintsMap {
 		var skipCheckingTaintsToAdd bool
 		for _, taintToRemove := range taintsToRemove {
+			taintToRemove := taintToRemove
 			if existingTaint.MatchTaint(&taintToRemove) {
 				skipCheckingTaintsToAdd = true
 				delete(addedTaintsMap, existingTaint)
@@ -59,6 +60,7 @@ func (t *tainter) Reconcile(node *corev1.Node, configNodeTaints []string) error 
 
 		var found bool
 		for _, taintToAdd := range taintsToAdd {
+			taintToAdd := taintToAdd
 			if existingTaint.MatchTaint(&taintToAdd) {
 				found = true
 				break
@@ -81,6 +83,7 @@ func (t *tainter) Reconcile(node *corev1.Node, configNodeTaints []string) error 
 	tmp := make([]corev1.Taint, 0, len(taintsToRemove))
 	for _, taintToRemove := range taintsToRemove {
 		// check whether the taint to remove even still exists on the node
+		taintToRemove := taintToRemove
 		if taints.TaintExists(node.Spec.Taints, &taintToRemove) {
 			tmp = append(tmp, taintToRemove)
 			updatedTaints[taintToRemove.ToString()] = "removed"
@@ -91,6 +94,7 @@ func (t *tainter) Reconcile(node *corev1.Node, configNodeTaints []string) error 
 	tmp = make([]corev1.Taint, 0, len(taintsToAdd))
 outer:
 	for _, taintToAdd := range taintsToAdd {
+		taintToAdd := taintToAdd
 		for _, taint := range node.Spec.Taints {
 			if taint.MatchTaint(&taintToAdd) {
 				if taint.ToString() != taintToAdd.ToString() {
