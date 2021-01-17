@@ -149,18 +149,19 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig 
 		r.logger.Info("updated node", "updatedLabels", labeler.UpdatedLabels(), "taints", node.Spec.Taints)
 	}
 
-	// 7. update the config file on disk if enabled
-	if config.EnableNodeConfigFileManagement() {
-		configFileUpdater := nodes.NewK3OSConfigFileUpdater()
-		updateErr := configFileUpdater.Update(nodeConfig)
-		if err = resultError(updateErr, r.logger); err != nil {
-			return ctrl.Result{}, err
-		}
-		if updateErr == nil { // would equal errors.ErrSkipUpdate if the update was skipped
-			r.logger.Info("successfully updated node config on disk")
-		} else {
-			r.logger.V(1).Info("skipped updating node config on disk")
-		}
+	// 7. update the config file on disk (if enabled – which is checked inside the updater)
+	configFileUpdater := nodes.NewK3OSConfigFileUpdater(r.configuration)
+	updateErr := configFileUpdater.Update(nodeConfig)
+	if err = resultError(updateErr, r.logger); err != nil {
+		return ctrl.Result{}, err
+	}
+	switch {
+	case updateErr == nil: // would equal errors.ErrSkipUpdate if the update was skipped
+		r.logger.Info("successfully updated node config on disk")
+	case errors.Is(updateErr, errors.ErrSkipUpdate):
+		r.logger.V(1).Info("skipped updating node config on disk")
+	default:
+		r.logger.Error(updateErr, "failed to update node config on disk")
 	}
 
 	return ctrl.Result{}, nil

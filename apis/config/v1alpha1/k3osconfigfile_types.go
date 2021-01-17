@@ -49,7 +49,7 @@ type K3OSConfigFileSpec struct {
 	K3OS K3OSConfigFileSectionK3OS `json:"k3os" yaml:"k3os"`
 
 	// Data contains the raw contents of the config file.
-	Data []byte `json:"-"`
+	Data []byte `json:"-" yaml:"-"`
 }
 
 // Validate checks the contents of the spec for errors and returns them.
@@ -57,8 +57,16 @@ func (s *K3OSConfigFileSpec) Validate() error {
 	return nil
 }
 
+// MarshalYAML returns the YAML representation of the config file.
+func (s *K3OSConfigFile) MarshalYAML() ([]byte, error) {
+	return yaml.Marshal(s.Spec)
+}
+
 // ParseConfigYAML parses the data of a k3OS config.yaml into a K3OSConfigFileSpec object.
 func ParseConfigYAML(data []byte) (*K3OSConfigFileSpec, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("cannot parse data into YAML node config because data is empty")
+	}
 	c := &K3OSConfigFileSpec{Data: data}
 	if err := yaml.Unmarshal(data, c); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal YAML node config data: %w", err)
