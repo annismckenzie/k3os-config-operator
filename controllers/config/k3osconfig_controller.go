@@ -65,10 +65,9 @@ func (r *K3OSConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	config = config.DeepCopy()
 	r.logger.V(1).Info("successfully fetched K3OSConfig", "spec", config.Spec)
 
-	switch r.leader {
-	case true: // this instance of the operator won the leader election and can update the K3OSConfig CR
+	if r.leader { // this instance of the operator won the leader election and can update the K3OSConfig CR
 		result, err = r.handleK3OSConfigAsLeader(ctx, config)
-	default: // handle k3os config file
+	} else { // handle k3os config file
 		result, err = r.handleK3OSConfig(ctx, config)
 	}
 
@@ -181,8 +180,7 @@ func (r *K3OSConfigReconciler) getNodeConfig(ctx context.Context, nodeName strin
 	}
 	nodeConfigBytes, ok := secret.Data[nodeName]
 	if !ok {
-		err = fmt.Errorf("failed to find node %q in config (keys: %v)", nodeName, secretKeys(secret))
-		return nil, err
+		return nil, fmt.Errorf("failed to find node %q in config (keys: %v)", nodeName, secretKeys(secret))
 	}
 	return configv1alpha1.ParseConfigYAML(nodeConfigBytes)
 }
@@ -196,9 +194,6 @@ func (r *K3OSConfigReconciler) getNode(ctx context.Context, nodeName string) (*c
 }
 
 func (r *K3OSConfigReconciler) updateNode(ctx context.Context, node *corev1.Node) error {
-	// TODO: switch to a better way that either implements retries or switch to patching
-	// the node (which would be faster anyways). The only fields we need to update are
-	// the labels, the taints and the annotations (for state tracking).
 	if _, err := r.clientset.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
