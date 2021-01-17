@@ -14,13 +14,14 @@ import (
 // Tainter allows reconciling node taints.
 type Tainter interface {
 	Reconcile(*corev1.Node, []string) error
+	UpdatedTaints() map[string]string // stringified taint => added/removed/changed
 }
 
 // tainter implements the Tainter interface.
 var _ Tainter = (*tainter)(nil)
 
 type tainter struct {
-	updatedTaints []string
+	updatedTaints map[string]string
 }
 
 // NewTainter returns an initialized taint reconciler.
@@ -72,9 +73,7 @@ func (t *tainter) Reconcile(node *corev1.Node, configNodeTaints []string) error 
 		addedTaintsMap[taintToAdd] = struct{}{}
 	}
 
-	if len(taintsToAdd) == 0 && len(taintsToRemove) == 0 {
-		return errors.ErrSkipUpdate
-	}
+	updatedTaints := map[string]string{}
 
 	// here we check whether any of the taints that should be removed
 	// can even be removed from the node's taints or whether they were
@@ -84,9 +83,34 @@ func (t *tainter) Reconcile(node *corev1.Node, configNodeTaints []string) error 
 		// check whether the taint to remove even still exists on the node
 		if taints.TaintExists(node.Spec.Taints, &taintToRemove) {
 			tmp = append(tmp, taintToRemove)
+			updatedTaints[taintToRemove.ToString()] = "removed"
 		}
 	}
 	taintsToRemove = tmp
+
+	tmp = make([]corev1.Taint, 0, len(taintsToAdd))
+outer:
+	for _, taintToAdd := range taintsToAdd {
+		for _, taint := range node.Spec.Taints {
+			if taint.MatchTaint(&taintToAdd) {
+				if taint.ToString() != taintToAdd.ToString() {
+					tmp = append(tmp, taintToAdd)
+					updatedTaints[taintToAdd.ToString()] = "changed"
+				}
+				continue outer
+			}
+		}
+
+		tmp = append(tmp, taintToAdd)
+		updatedTaints[taintToAdd.ToString()] = "added"
+	}
+	taintsToAdd = tmp
+
+	if len(taintsToAdd) == 0 && len(taintsToRemove) == 0 {
+		return errors.ErrSkipUpdate
+	}
+
+	t.updatedTaints = updatedTaints
 
 	_, newNodeTaints, err := taints.ReorganizeTaints(node, false, taintsToAdd, taintsToRemove)
 	if err != nil {
@@ -97,6 +121,11 @@ func (t *tainter) Reconcile(node *corev1.Node, configNodeTaints []string) error 
 	updateAddedTaints(node, addedTaintsMap)
 
 	return nil
+}
+
+// UpdatedTaints returns the updated (added, removed, changed) taints after Reconcile was called.
+func (t *tainter) UpdatedTaints() map[string]string {
+	return t.updatedTaints
 }
 
 func getAddedTaints(node *corev1.Node) map[corev1.Taint]struct{} {

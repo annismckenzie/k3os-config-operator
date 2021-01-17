@@ -35,10 +35,10 @@ func Test_tainter_Reconcile(t *testing.T) {
 	}
 	tests := []struct {
 		name                          string
-		l                             *labeler
 		args                          args
 		wantErr                       error
 		expectedTaints                []string
+		updatedTaints                 map[string]string // stringified taint => added/removed/changed
 		expectedAddedTaintsAnnotation string
 	}{
 		{
@@ -74,6 +74,10 @@ func Test_tainter_Reconcile(t *testing.T) {
 				"key1=value1:NoSchedule",
 				"key1=value1:NoExecute",
 			},
+			updatedTaints: map[string]string{
+				"key1=value1:NoSchedule": "added",
+				"key1=value1:NoExecute":  "added",
+			},
 			expectedAddedTaintsAnnotation: "key1=value1:NoExecute,key1=value1:NoSchedule",
 		},
 		{
@@ -88,7 +92,26 @@ func Test_tainter_Reconcile(t *testing.T) {
 				"existingTaint=existingTaintValue:NoSchedule",
 				"key1=value1:NoExecute",
 			},
+			updatedTaints: map[string]string{
+				"key1=value1:NoExecute": "added",
+			},
 			expectedAddedTaintsAnnotation: "key1=value1:NoExecute",
+		},
+		{
+			name: "Node has existing taints, we added some taints and we don't change them",
+			args: args{
+				node: taintedNode([]string{"key1=value1:NoExecute"}),
+				configNodeTaints: []string{
+					"key1=value1:NoExecute",
+				},
+			},
+			expectedTaints: []string{
+				"existingTaint=existingTaintValue:NoSchedule",
+				"key1=value1:NoExecute",
+			},
+			updatedTaints:                 map[string]string{},
+			expectedAddedTaintsAnnotation: "key1=value1:NoExecute",
+			wantErr:                       errors.ErrSkipUpdate,
 		},
 		{
 			name: "Node has existing taints and we add and update some taints",
@@ -102,6 +125,10 @@ func Test_tainter_Reconcile(t *testing.T) {
 			expectedTaints: []string{
 				"existingTaint=updatedTaintValue:NoSchedule",
 				"key2=value2:NoExecute",
+			},
+			updatedTaints: map[string]string{
+				"existingTaint=updatedTaintValue:NoSchedule": "changed",
+				"key2=value2:NoExecute":                      "added",
 			},
 			expectedAddedTaintsAnnotation: "existingTaint=updatedTaintValue:NoSchedule,key2=value2:NoExecute",
 		},
@@ -118,6 +145,10 @@ func Test_tainter_Reconcile(t *testing.T) {
 			expectedTaints: []string{
 				"existingTaint=existingTaintValue:NoSchedule",
 			},
+			updatedTaints: map[string]string{
+				"key2:NoExecute":         "removed", // FIXME: this should have `key2=value2:NoExecute` but taints are unique by key and effect only
+				"key3=value3:NoSchedule": "removed",
+			},
 			expectedAddedTaintsAnnotation: "",
 		},
 		{
@@ -131,6 +162,9 @@ func Test_tainter_Reconcile(t *testing.T) {
 			},
 			expectedTaints: []string{
 				"existingTaint=existingTaintValue:NoSchedule",
+			},
+			updatedTaints: map[string]string{
+				"key2:NoExecute": "removed", // FIXME: this should have `key2=value2:NoExecute` but taints are unique by key and effect only
 			},
 			expectedAddedTaintsAnnotation: "",
 		},
@@ -165,6 +199,21 @@ func Test_tainter_Reconcile(t *testing.T) {
 			addedTaintsAnnotation := strings.Join(addedTaints, internalConsts.NodeAnnotationValueSeparator)
 			if tt.expectedAddedTaintsAnnotation != addedTaintsAnnotation {
 				t.Errorf("tainter expected added taints annotation = %q, got %q", tt.expectedAddedTaintsAnnotation, addedTaintsAnnotation)
+			}
+
+			updatedTaints := l.UpdatedTaints()
+			if len(tt.updatedTaints) != len(updatedTaints) {
+				t.Errorf("tainter.UpdatedTaints() expected updated taints = %v (len: %d), got %v (len: %d)",
+					tt.updatedTaints, len(tt.updatedTaints), updatedTaints, len(updatedTaints))
+			}
+
+			for expectedUpdatedTaint, expectedEffect := range tt.updatedTaints {
+				effect, ok := updatedTaints[expectedUpdatedTaint]
+				if !ok {
+					t.Errorf("tainter expected updated taint %q but did not find it", expectedUpdatedTaint)
+				} else if expectedEffect != effect {
+					t.Errorf("tainter expected updated taint %q to be %q, got %q instead", expectedUpdatedTaint, expectedEffect, effect)
+				}
 			}
 		})
 	}

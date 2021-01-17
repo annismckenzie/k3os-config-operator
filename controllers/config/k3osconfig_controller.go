@@ -143,10 +143,17 @@ func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig 
 
 	// 6. update node only on changes
 	if updateNode {
-		if err = r.updateNode(ctx, node); err != nil {
-			return ctrl.Result{}, err
+		err = r.updateNode(ctx, node)
+		switch {
+		case err == nil:
+			r.logger.Info("successfully updated node", "updatedLabels", labeler.UpdatedLabels(), "updatedTaints", tainter.UpdatedTaints())
+		case apierrors.IsConflict(err): // check for conflict which happens from time to time and should not blow up the log
+			return ctrl.Result{}, errors.New("node object was changed, requeuing")
+		default:
+			return ctrl.Result{}, err // bail and pass error to caller
 		}
-		r.logger.Info("updated node", "updatedLabels", labeler.UpdatedLabels(), "taints", node.Spec.Taints)
+	} else {
+		r.logger.V(1).Info("skipped updating node")
 	}
 
 	// 7. update the config file on disk (if enabled – which is checked inside the updater)
