@@ -101,20 +101,21 @@ func resultError(err error, logger logr.Logger) error {
 	}
 }
 
-func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig *configv1alpha1.K3OSConfig) (ctrl.Result, error) {
-	// 1. get node name we're running
-	nodeName := r.configuration.NodeName
+func (r *K3OSConfigReconciler) handleK3OSConfig(ctx context.Context, k3OSConfig *configv1alpha1.K3OSConfig) (result ctrl.Result, err error) {
+	var (
+		nodeName   = r.configuration.NodeName // 1. get node name we're running
+		nodeConfig *configv1alpha1.K3OSConfigFileSpec
+		node       *corev1.Node
+	)
 
 	// 2. get node config
-	nodeConfig, err := r.getNodeConfig(ctx, nodeName)
-	if err != nil {
+	if nodeConfig, err = r.getNodeConfig(ctx, nodeName); err != nil {
 		return ctrl.Result{}, resultError(err, r.logger)
 	}
 	r.logger.V(1).Info("successfully fetched node config", "config", nodeConfig)
 
 	// 3. get node
-	node, err := r.getNode(nodeName)
-	if err != nil {
+	if node, err = r.getNode(nodeName); err != nil {
 		return ctrl.Result{}, resultError(err, r.logger)
 	}
 
