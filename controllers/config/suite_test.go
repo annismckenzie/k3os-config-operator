@@ -131,21 +131,8 @@ var _ = BeforeSuite(func(done Done) {
 	k8sClient = k8sManager.GetClient()
 	Expect(k8sClient).ToNot(BeNil())
 
-	// create the test namespace
-	input := framework.CreateNamespaceInput{
-		Creator: k8sClient,
-		Name:    k3OSConfigNamespaceName,
-	}
-	_ = framework.CreateNamespace(ctx, input, timeout, interval)
-
-	// create a dummy node
-	dummyNode1 = createNode(&corev1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        dummyNodeName,
-			Labels:      map[string]string{},
-			Annotations: map[string]string{},
-		},
-	})
+	createNamespace()
+	createDummyNode()
 
 	clientset, err := kubernetes.NewForConfig(k8sManager.GetConfig())
 	Expect(err).ToNot(HaveOccurred())
@@ -188,7 +175,7 @@ var _ = Describe("K3OSConfig controller", func() {
 				Name:      testConfiguration.NodeConfigSecretName,
 				Namespace: testConfiguration.Namespace,
 				Labels: map[string]string{
-					"app.kubernetes.io/managed-by": "k3os-config-operator", // FIXME: test this (operator shouldn't touch any other secret)
+					"app.kubernetes.io/managed-by": "k3os-config-operator",
 				},
 			},
 			Data: map[string][]byte{
@@ -213,8 +200,7 @@ var _ = Describe("K3OSConfig controller", func() {
 
 		tempConfigFile, err = ioutil.TempFile("", "k3osconfig.*.yaml")
 		Expect(err).ToNot(HaveOccurred())
-		err = tempConfigFile.Close()
-		Expect(err).ToNot(HaveOccurred())
+		Expect(tempConfigFile.Close()).ToNot(HaveOccurred())
 	})
 	AfterEach(func() {
 		err := os.Remove(tempConfigFile.Name())
@@ -237,26 +223,12 @@ var _ = Describe("K3OSConfig controller", func() {
 	})
 
 	Context("When creating a K3OSConfig CR", func() {
-		// TODO: test each case separately (node config management, label sync, taint sync)
 		BeforeEach(func() {
 			testConfiguration.NodeConfigFileLocation = tempConfigFile.Name()
 			testConfiguration.ManageNodeConfigFile = true
 		})
 		It("Should call Reconcile", func() {
-			// TODO: extract this so it can be reused in every It
-			updatedNode := &corev1.Node{}
-			Eventually(func() bool {
-				if err := k8sClient.Get(ctx, types.NamespacedName{Name: dummyNode1.GetName()}, updatedNode); err != nil {
-					return false
-				}
-
-				// FIXME: improve this conditional, maybe by adding a label or by watching the status of the CR? Nothing's updating that yet, though...
-				if len(updatedNode.GetLabels()) > 0 && len(updatedNode.Spec.Taints) > 0 && len(updatedNode.GetAnnotations()) > 0 {
-					return true
-				}
-
-				return false
-			}, timeout, interval).Should(BeTrue())
+			updatedNode := waitForNodeUpdate("newLabel")
 
 			labels := updatedNode.GetLabels()
 			annotations := updatedNode.GetAnnotations()
@@ -273,6 +245,40 @@ var _ = Describe("K3OSConfig controller", func() {
 		})
 	})
 })
+
+func waitForNodeUpdate(expectLabel string) *corev1.Node {
+	updatedNode := &corev1.Node{}
+	Eventually(func() bool {
+		if err := k8sClient.Get(ctx, types.NamespacedName{Name: dummyNode1.GetName()}, updatedNode); err != nil {
+			return false
+		}
+
+		_, ok := updatedNode.GetLabels()[expectLabel]
+		return ok
+	}, timeout, interval).Should(BeTrue())
+
+	return updatedNode
+}
+
+func createNamespace() {
+	// create the test namespace
+	input := framework.CreateNamespaceInput{
+		Creator: k8sClient,
+		Name:    k3OSConfigNamespaceName,
+	}
+	_ = framework.CreateNamespace(ctx, input, timeout, interval)
+}
+
+func createDummyNode() {
+	// create a dummy node
+	dummyNode1 = createNode(&corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        dummyNodeName,
+			Labels:      map[string]string{},
+			Annotations: map[string]string{},
+		},
+	})
+}
 
 func createTestNodeConfigSecret(secret *corev1.Secret) {
 	Expect(k8sClient.Create(ctx, secret)).Should(Succeed())
@@ -297,7 +303,7 @@ func createNode(node *corev1.Node) *corev1.Node {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 
-	// Cleanup the test namespace
+	// clean up the test namespace
 	framework.DeleteNamespace(ctx, framework.DeleteNamespaceInput{Deleter: k8sClient, Name: k3OSConfigNamespaceName}, timeout, interval)
 
 	err := testEnv.Stop()

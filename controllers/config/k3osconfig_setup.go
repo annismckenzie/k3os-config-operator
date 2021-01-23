@@ -197,8 +197,10 @@ func (r *K3OSConfigReconciler) enqueueObjectsOnChanges(object client.Object) []r
 		r.logger.Error(err, "failed to PartialObjectMetadataList all K3OSConfig resources in this namespace")
 	}
 
-	requests := make([]reconcile.Request, len(k3osconfigs.Items))
-	for i, item := range k3osconfigs.Items {
+	numItems := len(k3osconfigs.Items)
+	requests := make([]reconcile.Request, numItems)
+	for i := 0; i < numItems; i++ {
+		item := &k3osconfigs.Items[i]
 		requests[i] = reconcile.Request{NamespacedName: types.NamespacedName{Name: item.GetName(), Namespace: item.GetNamespace()}}
 	}
 	r.logger.V(1).Info("enqueuing requests for all K3OSConfig resources in this namespace", "namespace", r.namespace, "requests", requests)
