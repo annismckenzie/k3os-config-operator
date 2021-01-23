@@ -73,7 +73,7 @@ func main() {
 		Scheme:                        scheme,
 		Namespace:                     configuration.Namespace,
 		MetricsBindAddress:            configuration.MetricsAddr,
-		Port:                          9443,
+		Port:                          configuration.BindPort,
 		LeaderElection:                true, // this operator does not work without leader election
 		LeaderElectionID:              "8a68cfa7.operators.annismckenzie.github.com",
 		LeaderElectionNamespace:       configuration.Namespace,

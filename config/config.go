@@ -33,6 +33,7 @@ func parseWithOptions(c interface{}, parseOptions flags.Options) error {
 
 // Configuration contains all config values and is initialized via InitializeConfiguration.
 type Configuration struct {
+	BindPort    int    `long:"port"         default:"9443"  env:"BIND_PORT"    description:"The port to bind the operator to."`
 	MetricsAddr string `long:"metrics-addr" default:":8080" env:"METRICS_ADDR" description:"The address the metric endpoint binds to."`
 
 	Namespace string `long:"namespace" required:"true" env:"NAMESPACE" description:"The namespace the operator is running in."`
