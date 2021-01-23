@@ -30,7 +30,9 @@ func defaultNode() *corev1.Node {
 func labeledNode(updateLabels map[string]string) *corev1.Node {
 	node := defaultNode()
 	l := NewLabeler()
-	l.Reconcile(node, updateLabels)
+	if err := l.Reconcile(node, updateLabels); err != nil {
+		panic(err)
+	}
 	return node
 }
 
@@ -41,7 +43,6 @@ func Test_labeler_Reconcile(t *testing.T) {
 	}
 	tests := []struct {
 		name                          string
-		l                             *labeler
 		args                          args
 		wantErr                       error
 		expectedLabels                map[string]string
@@ -165,6 +166,7 @@ func Test_labeler_Reconcile(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			l := NewLabeler()
 			err := l.Reconcile(tt.args.node, tt.args.configNodeLabels)
@@ -185,9 +187,18 @@ func Test_labeler_Reconcile(t *testing.T) {
 			}
 			updatedLabels := l.UpdatedLabels()
 			if len(tt.updatedLabels) != len(updatedLabels) {
-				t.Errorf("labeler.GetUpdatedLabels() expected updated labels = %v (len: %d), got %v (len: %d)",
+				t.Errorf("labeler.UpdatedLabels() expected updated labels = %v (len: %d), got %v (len: %d)",
 					tt.updatedLabels, len(tt.updatedLabels), updatedLabels, len(updatedLabels))
 			}
+			for expectedLabelKey, expectedLabelValue := range tt.updatedLabels {
+				value, ok := updatedLabels[expectedLabelKey]
+				if !ok {
+					t.Errorf("labeler expected updated label %q but did not find it", expectedLabelKey)
+				} else if expectedLabelValue != value {
+					t.Errorf("labeler expected updated label %q with value %q, got %q instead", expectedLabelKey, expectedLabelValue, value)
+				}
+			}
+
 			addedLabelsMap := addedLabels(tt.args.node)
 			var addedLabels []string
 			for addedLabel := range addedLabelsMap {

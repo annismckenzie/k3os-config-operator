@@ -36,6 +36,11 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v2
+    - name: Download envtest dependencies
+      uses: teddyking/dependency-action@v2.0.0
+      with:
+        # extract the files into /home/runner/work/_temp/_github_home
+        deps: https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-1.17.9-linux-amd64.tar.gz
     - uses: actions/cache@v2
       with:
         path: |
@@ -45,4 +50,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
     - name: Test
-      run: go test ./...
+      run: go test -v -race -covermode atomic -coverprofile=profile.cov ./...
+      env:
+        KUBEBUILDER_ASSETS: /home/runner/work/_temp/_github_home/kubebuilder/bin
+    - name: Send coverage
+      uses: shogo82148/actions-goveralls@v1
+      with:
+        path-to-profile: profile.cov

@@ -30,8 +30,9 @@ import (
 	"os"
 
 	configv1alpha1 "github.com/annismckenzie/k3os-config-operator/apis/config/v1alpha1"
+	"github.com/annismckenzie/k3os-config-operator/config"
 	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
-	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
+	"github.com/annismckenzie/k3os-config-operator/pkg/errors"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,36 +47,52 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // K3OSConfigReconciler reconciles a K3OSConfig object.
 type K3OSConfigReconciler struct {
-	client      client.Client
-	clientset   *kubernetes.Clientset
-	logger      logr.Logger
-	scheme      *runtime.Scheme
-	leader      bool
-	nodeLister  listersv1.NodeLister
-	shutdownCtx context.Context
-	namespace   string
+	client        client.Client
+	clientset     *kubernetes.Clientset
+	configuration *config.Configuration
+	logger        logr.Logger
+	scheme        *runtime.Scheme
+	leader        bool
+	nodeLister    listersv1.NodeLister
+	shutdownCtx   context.Context
+	namespace     string
 }
 
 // Option denotes an option for configuring this controller.
 type Option interface{}
 
-type requireLeaderElectionOpt struct {
-	requireLeaderElection bool
-}
+type requireLeaderElectionOpt struct{}
 
 // RequireLeaderElection returns an option that requires the operator being the leader to run this controller instance.
 func RequireLeaderElection() Option {
 	return &requireLeaderElectionOpt{}
 }
 
+type withNodeListerOpt struct {
+	nodeLister listersv1.NodeLister
+}
+
+// WithNodeLister returns an option to make the node lister available to the controller.
+func WithNodeLister(nodeLister listersv1.NodeLister) Option {
+	return &withNodeListerOpt{nodeLister: nodeLister}
+}
+
+type withConfigurationOpt struct {
+	configuration *config.Configuration
+}
+
+// WithConfiguration returns an option to make the configuration available to the controller.
+func WithConfiguration(configuration *config.Configuration) Option {
+	return &withConfigurationOpt{configuration: configuration}
+}
+
 // https://github.com/kubernetes-sigs/controller-runtime/pull/921#issuecomment-662187521 doesn't work
-// but there's always another way. 🥁 🥁 🥁
+// but there's always another way 🥁 🥁 🥁.
 type nonLeaderLeaseNeedingManagerWrapper struct {
 	manager.Manager
 }
@@ -95,9 +112,9 @@ func (w *nonLeaderLeaseNeedingRunnableWrapper) NeedLeaderElection() bool {
 
 // SetupWithManager is called in main to setup the K3OSConfig reconiler with the manager as a non-leader.
 func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr ctrl.Manager, options ...Option) error {
-	r.nodeLister = nodes.NewNodeLister()
 	r.shutdownCtx = shutdownCtx
-	r.namespace = consts.Namespace()
+	r.client = mgr.GetClient()
+	r.scheme = mgr.GetScheme()
 
 	clientset, err := kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
@@ -109,9 +126,19 @@ func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr
 		if _, ok := option.(*requireLeaderElectionOpt); ok {
 			r.leader = true
 		}
+		if nodeListerOpt, ok := option.(*withNodeListerOpt); ok {
+			r.nodeLister = nodeListerOpt.nodeLister
+		}
+		if configurationOpt, ok := option.(*withConfigurationOpt); ok {
+			r.configuration = configurationOpt.configuration
+		}
 	}
 
-	// cannot inject via inject.LoggerInto because `leader` field isn't set at that point
+	if r.configuration == nil {
+		return errors.New("the configuration must be provided via the WithConfiguration option")
+	}
+
+	r.namespace = r.configuration.Namespace
 	r.logger = mgr.GetLogger().
 		WithName("controllers").
 		WithName(configv1alpha1.K3OSConfigKind).
@@ -135,16 +162,14 @@ func (r *K3OSConfigReconciler) SetupWithManager(shutdownCtx context.Context, mgr
 	// construct a watch on the Node this operator is running on
 	opts = []builder.WatchesOption{
 		builder.OnlyMetadata, // only watch and cache the metadata of the nodes because we don't need the contents
-		builder.WithPredicates(namePredicateForNode()),
+		builder.WithPredicates(namePredicateForNode(r.configuration.NodeName)),
 	}
 	c.Watches(&source.Kind{Type: &corev1.Node{}}, handler.EnqueueRequestsFromMapFunc(r.enqueueObjectsOnChanges), opts...)
 
 	return c.Complete(r)
 }
 
-func namePredicateForNode() predicate.Predicate {
-	nodeName := consts.NodeName()
-
+func namePredicateForNode(nodeName string) predicate.Predicate {
 	return predicate.NewPredicateFuncs(func(o client.Object) bool {
 		return o.GetName() == nodeName
 	})
@@ -172,26 +197,12 @@ func (r *K3OSConfigReconciler) enqueueObjectsOnChanges(object client.Object) []r
 		r.logger.Error(err, "failed to PartialObjectMetadataList all K3OSConfig resources in this namespace")
 	}
 
-	requests := make([]reconcile.Request, len(k3osconfigs.Items))
-	for i, item := range k3osconfigs.Items {
+	numItems := len(k3osconfigs.Items)
+	requests := make([]reconcile.Request, numItems)
+	for i := 0; i < numItems; i++ {
+		item := &k3osconfigs.Items[i]
 		requests[i] = reconcile.Request{NamespacedName: types.NamespacedName{Name: item.GetName(), Namespace: item.GetNamespace()}}
 	}
 	r.logger.V(1).Info("enqueuing requests for all K3OSConfig resources in this namespace", "namespace", r.namespace, "requests", requests)
 	return requests
-}
-
-// Interface implementations for dependency injection
-var _ inject.Client = (*K3OSConfigReconciler)(nil)
-var _ inject.Scheme = (*K3OSConfigReconciler)(nil)
-
-// InjectClient satisfies the inject.Client interface.
-func (r *K3OSConfigReconciler) InjectClient(client client.Client) error {
-	r.client = client
-	return nil
-}
-
-// InjectScheme satisfies the inject.Scheme interface.
-func (r *K3OSConfigReconciler) InjectScheme(scheme *runtime.Scheme) error {
-	r.scheme = scheme
-	return nil
 }

@@ -15,7 +15,10 @@ all: manager
 
 # Run tests
 test: generate fmt vet manifests
-	go test ./... -coverprofile cover.out
+	go test -race -coverprofile cover.out ./...
+
+lint:
+	golangci-lint run
 
 # Build manager binary
 manager: generate fmt vet

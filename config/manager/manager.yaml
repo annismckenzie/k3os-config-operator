@@ -24,8 +24,6 @@ spec:
       containers:
       - command:
         - /manager
-        args:
-        - --enable-leader-election
         image: ghcr.io/annismckenzie/k3os-config-operator
         name: manager
         env:

@@ -35,6 +35,13 @@ const (
 	UNTAINTED = "untainted"
 )
 
+// consts for taint value parts.
+const (
+	taintKeyOnly    = 1 // '<key>'
+	taintWithEffect = 2 // '<key>:<effect>' or '<key>=<value>:<effect>'
+	taintKeyValue   = 2
+)
+
 // parseTaint parses a taint from a string, whose form must be either
 // '<key>=<value>:<effect>', '<key>:<effect>', or '<key>'.
 func parseTaint(st string) (corev1.Taint, error) {
@@ -46,20 +53,20 @@ func parseTaint(st string) (corev1.Taint, error) {
 
 	parts := strings.Split(st, ":")
 	switch len(parts) {
-	case 1:
+	case taintKeyOnly:
 		key = parts[0]
-	case 2:
+	case taintWithEffect:
 		effect = corev1.TaintEffect(parts[1])
 		if err := validateTaintEffect(effect); err != nil {
 			return taint, err
 		}
 
 		partsKV := strings.Split(parts[0], "=")
-		if len(partsKV) > 2 {
+		if len(partsKV) > taintKeyValue {
 			return taint, fmt.Errorf("invalid taint spec: %v", st)
 		}
 		key = partsKV[0]
-		if len(partsKV) == 2 {
+		if len(partsKV) == taintKeyValue {
 			value = partsKV[1]
 			if errs := validation.IsValidLabelValue(value); len(errs) > 0 {
 				return taint, fmt.Errorf("invalid taint spec: %v, %s", st, strings.Join(errs, "; "))
@@ -90,8 +97,7 @@ func validateTaintEffect(effect corev1.TaintEffect) error {
 
 // ParseTaints takes a spec which is an array and creates slices for new taints to be added, taints to be deleted.
 // It also validates the spec. For example, the form `<key>` may be used to remove a taint, but not to add one.
-func ParseTaints(spec []string) ([]corev1.Taint, []corev1.Taint, error) {
-	var taints, taintsToRemove []corev1.Taint
+func ParseTaints(spec []string) (taintsToAdd, taintsToRemove []corev1.Taint, err error) {
 	uniqueTaints := map[corev1.TaintEffect]sets.String{}
 
 	for _, taintSpec := range spec {
@@ -120,15 +126,15 @@ func ParseTaints(spec []string) ([]corev1.Taint, []corev1.Taint, error) {
 			}
 			uniqueTaints[newTaint.Effect].Insert(newTaint.Key)
 
-			taints = append(taints, newTaint)
+			taintsToAdd = append(taintsToAdd, newTaint)
 		}
 	}
-	return taints, taintsToRemove, nil
+	return taintsToAdd, taintsToRemove, nil
 }
 
 // ReorganizeTaints returns the updated set of taints, taking into account old taints that were not updated,
 // old taints that were updated, old taints that were deleted, and new taints.
-func ReorganizeTaints(node *corev1.Node, overwrite bool, taintsToAdd []corev1.Taint, taintsToRemove []corev1.Taint) (string, []corev1.Taint, error) {
+func ReorganizeTaints(node *corev1.Node, overwrite bool, taintsToAdd, taintsToRemove []corev1.Taint) (string, []corev1.Taint, error) {
 	newTaints := append([]corev1.Taint{}, taintsToAdd...)
 	oldTaints := node.Spec.Taints
 	// add taints that already existing but not updated to newTaints
@@ -147,7 +153,7 @@ func deleteTaints(taintsToRemove []corev1.Taint, newTaints *[]corev1.Taint) ([]e
 	allErrs := []error{}
 	var removed bool
 	for _, taintToRemove := range taintsToRemove {
-		removed = false
+		taintToRemove := taintToRemove
 		if len(taintToRemove.Effect) > 0 {
 			*newTaints, removed = DeleteTaint(*newTaints, &taintToRemove)
 		} else {
@@ -161,10 +167,10 @@ func deleteTaints(taintsToRemove []corev1.Taint, newTaints *[]corev1.Taint) ([]e
 }
 
 // addTaints adds the newTaints list to existing ones and updates the newTaints List.
-// TODO: This needs a rewrite to take only the new values instead of appended newTaints list to be consistent.
 func addTaints(oldTaints []corev1.Taint, newTaints *[]corev1.Taint) bool {
 	for _, oldTaint := range oldTaints {
 		existsInNew := false
+		oldTaint := oldTaint
 		for _, taint := range *newTaints {
 			if taint.MatchTaint(&oldTaint) {
 				existsInNew = true
@@ -178,7 +184,7 @@ func addTaints(oldTaints []corev1.Taint, newTaints *[]corev1.Taint) bool {
 	return len(oldTaints) != len(*newTaints)
 }
 
-// DeleteTaintsByKey removes all the taints that have the same key to given taintKey
+// DeleteTaintsByKey removes all the taints that have the same key to given taintKey.
 func DeleteTaintsByKey(taints []corev1.Taint, taintKey string) ([]corev1.Taint, bool) {
 	newTaints := []corev1.Taint{}
 	deleted := false
@@ -216,8 +222,9 @@ func TaintExists(taints []corev1.Taint, taintToFind *corev1.Taint) bool {
 	return false
 }
 
-func TaintSetDiff(t1, t2 []corev1.Taint) (taintsToAdd []*corev1.Taint, taintsToRemove []*corev1.Taint) {
+func TaintSetDiff(t1, t2 []corev1.Taint) (taintsToAdd, taintsToRemove []*corev1.Taint) {
 	for _, taint := range t1 {
+		taint := taint
 		if !TaintExists(t2, &taint) {
 			t := taint
 			taintsToAdd = append(taintsToAdd, &t)
@@ -225,6 +232,7 @@ func TaintSetDiff(t1, t2 []corev1.Taint) (taintsToAdd []*corev1.Taint, taintsToR
 	}
 
 	for _, taint := range t2 {
+		taint := taint
 		if !TaintExists(t1, &taint) {
 			t := taint
 			taintsToRemove = append(taintsToRemove, &t)

@@ -25,11 +25,9 @@ SOFTWARE.
 package main
 
 import (
-	"flag"
 	"os"
 
 	"github.com/annismckenzie/k3os-config-operator/config"
-	"github.com/annismckenzie/k3os-config-operator/pkg/consts"
 	"github.com/annismckenzie/k3os-config-operator/pkg/nodes"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -57,27 +55,28 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false, "Enable leader election for controller manager.")
-	flag.Parse()
+	configuration, err := config.InitializeConfiguration()
+	if err != nil {
+		zap.New().WithName("initializeConfig").Error(err, "unable to initialize configuration")
+		os.Exit(1)
+	}
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(config.EnableDevMode())))
+	ctrl.SetLogger(zap.New(zap.UseDevMode(configuration.EnableDevMode())))
 	ctx := ctrl.SetupSignalHandler()
 
-	if nodeName := consts.NodeName(); nodeName == "" {
+	if nodeName := configuration.NodeName; nodeName == "" {
 		setupLog.Info("unable to determine node name (is the NODE_NAME environment variable set?)")
 		os.Exit(1)
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                        scheme,
-		Namespace:                     consts.Namespace(),
-		MetricsBindAddress:            metricsAddr,
-		Port:                          9443,
-		LeaderElection:                enableLeaderElection,
+		Namespace:                     configuration.Namespace,
+		MetricsBindAddress:            configuration.MetricsAddr,
+		Port:                          configuration.BindPort,
+		LeaderElection:                true, // this operator does not work without leader election
 		LeaderElectionID:              "8a68cfa7.operators.annismckenzie.github.com",
+		LeaderElectionNamespace:       configuration.Namespace,
 		LeaderElectionResourceLock:    resourcelock.LeasesResourceLock,
 		LeaderElectionReleaseOnCancel: true, // make the leader step down voluntarily when the manager ends
 	})
@@ -96,11 +95,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(ctx, mgr, configcontroller.RequireLeaderElection()); err != nil {
+	opts := []configcontroller.Option{
+		configcontroller.WithNodeLister(nodes.NewNodeLister()),
+		configcontroller.WithConfiguration(configuration),
+	}
+	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(ctx, mgr, append(opts, configcontroller.RequireLeaderElection())...); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", configv1alpha1.K3OSConfigKind, "leader", true)
 		os.Exit(1)
 	}
-	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(ctx, mgr); err != nil {
+	if err = (&configcontroller.K3OSConfigReconciler{}).SetupWithManager(ctx, mgr, opts...); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", configv1alpha1.K3OSConfigKind, "leader", false)
 		os.Exit(1)
 	}
