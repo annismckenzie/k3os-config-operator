@@ -68,5 +68,5 @@ func (u *k3OSConfigFileUpdater) Update(configFileSpec *configv1alpha1.K3OSConfig
 	}
 	// write the new configuration data
 	_, err = configFile.WriteAt(configFileSpec.Data, 0)
-	return
+	return err
 }
