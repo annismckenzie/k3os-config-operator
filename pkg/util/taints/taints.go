@@ -222,6 +222,7 @@ func TaintExists(taints []corev1.Taint, taintToFind *corev1.Taint) bool {
 	return false
 }
 
+// TaintSetDiff returns the diff of two lists of taints.
 func TaintSetDiff(t1, t2 []corev1.Taint) (taintsToAdd, taintsToRemove []*corev1.Taint) {
 	for _, taint := range t1 {
 		taint := taint
