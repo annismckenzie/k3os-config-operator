@@ -6,6 +6,7 @@
 This operator will keep all fields of k3OS's `config.yaml` files in sync. Specifically, it's written to:
 - sync node labels
 - sync node taints
+- keep the `/var/lib/rancher/k3os/config.yaml` on each node in sync
 
 It runs as a DaemonSet on each node in the cluster.
 
