@@ -1,5 +1,7 @@
 # k3OS Config Operator
 
+[![Coverage Status](https://coveralls.io/repos/github/annismckenzie/k3os-config-operator/badge.svg?branch=main)](https://coveralls.io/github/annismckenzie/k3os-config-operator?branch=main)
+
 This operator will keep all fields of k3OS's `config.yaml` files in sync. Specifically, it's written to:
 - sync node labels
 - sync node taints
