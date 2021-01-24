@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.3.1](https://github.com/annismckenzie/k3os-config-operator/tree/v0.3.1) (2021-01-24)
+
+[Full Changelog](https://github.com/annismckenzie/k3os-config-operator/compare/v0.3.0...v0.3.1)
+
+**Fixed bugs:**
+
+- Stray --enable-leader-election flag causes operator to crashloop [\#42](https://github.com/annismckenzie/k3os-config-operator/pull/42) ([annismckenzie](https://github.com/annismckenzie))
+
 ## [v0.3.0](https://github.com/annismckenzie/k3os-config-operator/tree/v0.3.0) (2021-01-24)
 
 [Full Changelog](https://github.com/annismckenzie/k3os-config-operator/compare/v0.2.0...v0.3.0)
