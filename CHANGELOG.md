@@ -10,6 +10,7 @@
 
 **Merged pull requests:**
 
+- Release v0.3.0 [\#40](https://github.com/annismckenzie/k3os-config-operator/pull/40) ([annismckenzie](https://github.com/annismckenzie))
 - Add missing config file sync feature to the README [\#39](https://github.com/annismckenzie/k3os-config-operator/pull/39) ([annismckenzie](https://github.com/annismckenzie))
 - Add Go Report Card badge [\#37](https://github.com/annismckenzie/k3os-config-operator/pull/37) ([annismckenzie](https://github.com/annismckenzie))
 - Stop skipping tests on the main branch [\#36](https://github.com/annismckenzie/k3os-config-operator/pull/36) ([annismckenzie](https://github.com/annismckenzie))
