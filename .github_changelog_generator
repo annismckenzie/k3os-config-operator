@@ -1,2 +1,4 @@
 unreleased=true
 future-release=v0.4.0
+project=k3os-config-operator
+user=annismckenzie
