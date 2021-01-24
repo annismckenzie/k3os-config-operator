@@ -430,7 +430,6 @@ spec:
           name: https
       - args:
         - --metrics-addr=127.0.0.1:8080
-        - --enable-leader-election
         command:
         - /manager
         env:
@@ -446,7 +445,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: ghcr.io/annismckenzie/k3os-config-operator:v0.3.0
+        image: ghcr.io/annismckenzie/k3os-config-operator:v0.3.1
         name: manager
         resources:
           limits:
@@ -459,6 +458,8 @@ spec:
         - mountPath: /etc/k3osconfig.yaml
           name: varlibrancherk3osconfigyaml
       terminationGracePeriodSeconds: 10
+      tolerations:
+      - operator: Exists
       volumes:
       - hostPath:
           path: /var/lib/rancher/k3os/config.yaml

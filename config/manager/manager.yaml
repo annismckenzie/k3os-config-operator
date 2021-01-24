@@ -21,6 +21,8 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      tolerations:
+        - operator: Exists
       containers:
       - command:
         - /manager
