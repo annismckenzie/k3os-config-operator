@@ -58,7 +58,7 @@ manifests: controller-gen
 update-changelog:
 	@ docker run -it --rm \
 		-v "$(shell pwd)":/usr/local/src/your-app ferrarimarco/github-changelog-generator \
-		--user annismckenzie --project k3os-config-operator --token "${CHANGELOG_GITHUB_TOKEN}"
+		--token "${CHANGELOG_GITHUB_TOKEN}"
 
 # Run go fmt against code
 fmt:
