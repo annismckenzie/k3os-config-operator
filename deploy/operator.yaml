@@ -458,6 +458,8 @@ spec:
         - mountPath: /etc/k3osconfig.yaml
           name: varlibrancherk3osconfigyaml
       terminationGracePeriodSeconds: 10
+      tolerations:
+      - operator: Exists
       volumes:
       - hostPath:
           path: /var/lib/rancher/k3os/config.yaml
