@@ -48,7 +48,7 @@ linters:
     - dogsled
     - dupl
     - exhaustive
-    - exportloopref
+    - exportloopref # FIXME: use looppointer as soon as it's available
     - goconst
     - gocritic
     - gocyclo
@@ -71,7 +71,6 @@ linters:
     - nolintlint
     - prealloc
     - rowserrcheck
-    - scopelint
     - sqlclosecheck
     - staticcheck
     - structcheck
