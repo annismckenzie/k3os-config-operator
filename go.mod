@@ -9,7 +9,7 @@ require (
 	github.com/onsi/gomega v1.13.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	k8s.io/api v0.20.5
-	k8s.io/apimachinery v0.20.5
+	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v0.20.5
 	sigs.k8s.io/cluster-api v0.3.11-0.20210115191551-61dc332270dc // uses master, added to use testing helpers
 	sigs.k8s.io/controller-runtime v0.8.3
