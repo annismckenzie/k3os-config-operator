@@ -1,4 +1,5 @@
 IMAGE ?= controller:latest
+TOOLS_IMAGE ?= tools:latest
 PUSH_IMAGE ?= false
 PLATFORM ?= linux/amd64,linux/arm64
 
@@ -51,6 +52,9 @@ render-static-manifests:
 	@ $(SKAFFOLD) build -q -p release
 	@ $(KUSTOMIZE) build config/release > deploy/operator.yaml
 
+skaffold-build-tools:
+	$(SKAFFOLD) build -q -p tools -b tools
+
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
@@ -79,6 +83,10 @@ docker-build: test
 # Build dev Docker image
 docker-build-dev:
 	docker buildx build . -t ${IMAGE} --platform ${PLATFORM} -f Dockerfile.dev --push=${PUSH_IMAGE}
+
+docker-build-tools:
+	@ echo "Building tools image with tag ${TOOLS_IMAGE}"
+	docker buildx build . -f cmd/update_k3osnodes_secret/Dockerfile -t ${TOOLS_IMAGE} --platform ${PLATFORM} --push=${PUSH_IMAGE}
 
 # find or download controller-gen
 # download controller-gen if necessary
