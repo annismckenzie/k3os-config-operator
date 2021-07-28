@@ -1,5 +1,40 @@
 # Changelog
 
+## [v0.3.2](https://github.com/annismckenzie/k3os-config-operator/tree/v0.3.2) (2021-07-28)
+
+[Full Changelog](https://github.com/annismckenzie/k3os-config-operator/compare/v0.3.1...v0.3.2)
+
+**Merged pull requests:**
+
+- Upgrade dependencies [\#98](https://github.com/annismckenzie/k3os-config-operator/pull/98) ([annismckenzie](https://github.com/annismckenzie))
+- Bump github.com/onsi/gomega from 1.12.0 to 1.13.0 [\#84](https://github.com/annismckenzie/k3os-config-operator/pull/84) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump golang from 1.16.3-alpine to 1.16.4-alpine [\#76](https://github.com/annismckenzie/k3os-config-operator/pull/76) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump github.com/onsi/gomega from 1.11.0 to 1.12.0 [\#75](https://github.com/annismckenzie/k3os-config-operator/pull/75) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump github.com/onsi/ginkgo from 1.16.1 to 1.16.2 [\#74](https://github.com/annismckenzie/k3os-config-operator/pull/74) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump actions/cache from v2.1.4 to v2.1.5 [\#73](https://github.com/annismckenzie/k3os-config-operator/pull/73) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump github.com/onsi/ginkgo from 1.16.0 to 1.16.1 [\#70](https://github.com/annismckenzie/k3os-config-operator/pull/70) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Run Go tests for v1.16.x, update golangci-lint version to v1.39 [\#69](https://github.com/annismckenzie/k3os-config-operator/pull/69) ([annismckenzie](https://github.com/annismckenzie))
+- Bump github.com/onsi/ginkgo from 1.15.2 to 1.16.0 [\#68](https://github.com/annismckenzie/k3os-config-operator/pull/68) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump golangci/golangci-lint-action from v2.5.1 to v2.5.2 [\#67](https://github.com/annismckenzie/k3os-config-operator/pull/67) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump golang from 1.16.2-alpine to 1.16.3-alpine [\#66](https://github.com/annismckenzie/k3os-config-operator/pull/66) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump github.com/jessevdk/go-flags from 1.4.0 to 1.5.0 [\#65](https://github.com/annismckenzie/k3os-config-operator/pull/65) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump k8s.io/client-go from 0.20.4 to 0.20.5 [\#62](https://github.com/annismckenzie/k3os-config-operator/pull/62) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump github.com/onsi/ginkgo from 1.15.1 to 1.15.2 [\#61](https://github.com/annismckenzie/k3os-config-operator/pull/61) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump golang from 1.16.0-alpine to 1.16.2-alpine [\#60](https://github.com/annismckenzie/k3os-config-operator/pull/60) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump sigs.k8s.io/controller-runtime from 0.8.2 to 0.8.3 [\#59](https://github.com/annismckenzie/k3os-config-operator/pull/59) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump github.com/onsi/ginkgo from 1.15.0 to 1.15.1 [\#58](https://github.com/annismckenzie/k3os-config-operator/pull/58) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump github.com/onsi/gomega from 1.10.5 to 1.11.0 [\#57](https://github.com/annismckenzie/k3os-config-operator/pull/57) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump golangci/golangci-lint-action from v2.4.0 to v2.5.1 [\#56](https://github.com/annismckenzie/k3os-config-operator/pull/56) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump golang from 1.15-alpine to 1.16.0-alpine [\#55](https://github.com/annismckenzie/k3os-config-operator/pull/55) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump k8s.io/client-go from 0.20.3 to 0.20.4 [\#52](https://github.com/annismckenzie/k3os-config-operator/pull/52) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump k8s.io/client-go from 0.20.2 to 0.20.3 [\#49](https://github.com/annismckenzie/k3os-config-operator/pull/49) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump golangci/golangci-lint-action from v2 to v2.4.0 [\#48](https://github.com/annismckenzie/k3os-config-operator/pull/48) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump sigs.k8s.io/controller-runtime from 0.8.1 to 0.8.2 [\#47](https://github.com/annismckenzie/k3os-config-operator/pull/47) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump actions/cache from v2 to v2.1.4 [\#46](https://github.com/annismckenzie/k3os-config-operator/pull/46) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump github.com/onsi/gomega from 1.10.4 to 1.10.5 [\#45](https://github.com/annismckenzie/k3os-config-operator/pull/45) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump github.com/onsi/ginkgo from 1.14.2 to 1.15.0 [\#44](https://github.com/annismckenzie/k3os-config-operator/pull/44) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump github.com/go-logr/logr from 0.3.0 to 0.4.0 [\#43](https://github.com/annismckenzie/k3os-config-operator/pull/43) ([dependabot[bot]](https://github.com/apps/dependabot))
+
 ## [v0.3.1](https://github.com/annismckenzie/k3os-config-operator/tree/v0.3.1) (2021-01-24)
 
 [Full Changelog](https://github.com/annismckenzie/k3os-config-operator/compare/v0.3.0...v0.3.1)
