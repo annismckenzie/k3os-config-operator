@@ -98,16 +98,11 @@ var _ = BeforeSuite(func(done Done) {
 	err = os.Setenv("NAMESPACE", k3OSConfigNamespaceName)
 	Expect(err).ToNot(HaveOccurred())
 
-	customAPIServerFlags := []string{
-		"--enable-admission-plugins=PodSecurityPolicy",
-	}
-	apiServerFlags := append(envtest.DefaultKubeAPIServerFlags, customAPIServerFlags...)
-
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:  []string{filepath.Join("..", "..", "config", "crd", "bases")},
-		KubeAPIServerFlags: apiServerFlags,
+		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
 	}
+	testEnv.ControlPlane.GetAPIServer().Configure().Append("enable-admission-plugins", "PodSecurityPolicy")
 
 	cfg, err = testEnv.Start()
 	Expect(err).ToNot(HaveOccurred())
