@@ -11,7 +11,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.14.x, 1.15.x, 1.16.x]
+        go-version: [1.16.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -20,7 +20,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v2.3.4
     - name: Download envtest dependencies
       uses: teddyking/dependency-action@v2.0.0
       with:
@@ -39,6 +39,6 @@ jobs:
       env:
         KUBEBUILDER_ASSETS: /home/runner/work/_temp/_github_home/kubebuilder/bin
     - name: Send coverage
-      uses: shogo82148/actions-goveralls@v1
+      uses: shogo82148/actions-goveralls@v1.4.4
       with:
         path-to-profile: profile.cov
