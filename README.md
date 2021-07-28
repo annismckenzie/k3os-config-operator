@@ -37,14 +37,16 @@ That Kubernetes operator doesn't exist. At least, it didn't until now. 🤠
 ## Installation
 
 ```sh
-  kubectl apply -f https://raw.githubusercontent.com/annismckenzie/k3os-config-operator/v0.3.1/deploy/operator.yaml
+  kubectl apply -f https://raw.githubusercontent.com/annismckenzie/k3os-config-operator/v0.3.2/deploy/operator.yaml
 ```
 
 
 ## Releasing
 
-1. Tag locally with `vx.y.z`. Make sure the working directory is clean.
-2. Run `make render-static-manifests`. This will build and push the new multi-arch image.
-3. Update the installation path above with the new tag.
-4. Commit the updated `deploy/operator.yaml` and the update to the README.
-5. Delete the local tag, merge the release PR, tag again on the `main` branch, then push using `git push origin --tags`.
+1. Create `release-vx.y.z` branch. Update `config/release/kustomization.yaml` with the new version, commit.
+2. Tag locally with `vx.y.z`. Make sure the working directory is clean.
+3. Run `make render-static-manifests`. This will build and push the new multi-arch image.
+4. Update the installation path above with the new tag.
+5. Commit the updated `deploy/operator.yaml` and the update to the README.
+6. Recreate the local tag, push the tag, then update the changelog with `make update-changelog`. Commit and push.
+7. Merge the release PR.

@@ -1,5 +1,5 @@
 unreleased=true
-future-release=v0.3.1
+future-release=v0.3.3
 project=k3os-config-operator
 user=annismckenzie
 exclude-labels=duplicate,question,invalid,wontfix,Duplicate,Question,Invalid,Wontfix,housekeeping,exclude from changelog
