@@ -6,6 +6,10 @@
 
 **Merged pull requests:**
 
+- Bump shogo82148/actions-goveralls from 1.4.4 to 1.4.5 [\#102](https://github.com/annismckenzie/k3os-config-operator/pull/102) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump docker/login-action from 1.9.0 to 1.10.0 [\#101](https://github.com/annismckenzie/k3os-config-operator/pull/101) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump docker/build-push-action from 2.4.0 to 2.6.1 [\#100](https://github.com/annismckenzie/k3os-config-operator/pull/100) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bump docker/setup-buildx-action from 1.3.0 to 1.5.1 [\#99](https://github.com/annismckenzie/k3os-config-operator/pull/99) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Upgrade dependencies [\#98](https://github.com/annismckenzie/k3os-config-operator/pull/98) ([annismckenzie](https://github.com/annismckenzie))
 - Bump github.com/onsi/gomega from 1.12.0 to 1.13.0 [\#84](https://github.com/annismckenzie/k3os-config-operator/pull/84) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Bump golang from 1.16.3-alpine to 1.16.4-alpine [\#76](https://github.com/annismckenzie/k3os-config-operator/pull/76) ([dependabot[bot]](https://github.com/apps/dependabot))
