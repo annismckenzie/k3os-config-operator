@@ -11,7 +11,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.16.x]
+        go-version: [1.17.x, 1.16.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -39,6 +39,6 @@ jobs:
       env:
         KUBEBUILDER_ASSETS: /home/runner/work/_temp/_github_home/kubebuilder/bin
     - name: Send coverage
-      uses: shogo82148/actions-goveralls@v1.4.5
+      uses: shogo82148/actions-goveralls@v1.4.6
       with:
         path-to-profile: profile.cov
