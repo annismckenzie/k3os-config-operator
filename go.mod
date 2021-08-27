@@ -12,10 +12,10 @@ require (
 	k8s.io/apimachinery v0.22.1
 	k8s.io/client-go v0.22.1
 	sigs.k8s.io/cluster-api v0.4.0 // indirect; uses master, added to use testing helpers
-	sigs.k8s.io/cluster-api/test v0.4.0
+	sigs.k8s.io/cluster-api/test v0.4.2
 	sigs.k8s.io/controller-runtime v0.9.6
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.0
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.2
 
 // replace sigs.k8s.io/controller-runtime => ../../../sigs.k8s.io/controller-runtime
