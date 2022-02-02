@@ -12,7 +12,7 @@ require (
 	k8s.io/api v0.23.3
 	k8s.io/apimachinery v0.23.3
 	k8s.io/client-go v0.23.3
-	sigs.k8s.io/cluster-api/test v1.0.2
+	sigs.k8s.io/cluster-api/test v1.0.3
 	sigs.k8s.io/controller-runtime v0.11.0
 )
 
@@ -25,7 +25,7 @@ require (
 	github.com/coredns/corefile-migration v1.0.13 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v20.10.7+incompatible // indirect
+	github.com/docker/docker v20.10.11+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
@@ -84,6 +84,6 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.0.2
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.0.3
 
 // replace sigs.k8s.io/controller-runtime => ../../../sigs.k8s.io/controller-runtime
