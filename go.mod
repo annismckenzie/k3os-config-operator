@@ -3,7 +3,6 @@ module github.com/annismckenzie/k3os-config-operator
 go 1.17
 
 require (
-	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/go-logr/logr v1.2.2
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/onsi/ginkgo v1.16.5
@@ -21,6 +20,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
+	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/coredns/caddy v1.1.0 // indirect
 	github.com/coredns/corefile-migration v1.0.14 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -29,6 +29,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
+	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-logr/zapr v1.2.0 // indirect
 	github.com/gobuffalo/flect v0.2.4 // indirect
@@ -84,6 +85,6 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.0.3
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.1.0
 
 // replace sigs.k8s.io/controller-runtime => ../../../sigs.k8s.io/controller-runtime
