@@ -11,7 +11,7 @@ require (
 	k8s.io/api v0.23.4
 	k8s.io/apimachinery v0.23.4
 	k8s.io/client-go v0.23.4
-	sigs.k8s.io/cluster-api/test v1.1.1
+	sigs.k8s.io/cluster-api/test v1.1.2
 	sigs.k8s.io/controller-runtime v0.11.1
 )
 
@@ -85,6 +85,6 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.1.1
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.1.2
 
 // replace sigs.k8s.io/controller-runtime => ../../../sigs.k8s.io/controller-runtime
