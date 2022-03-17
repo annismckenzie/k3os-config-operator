@@ -3,7 +3,7 @@ module github.com/annismckenzie/k3os-config-operator
 go 1.17
 
 require (
-	github.com/go-logr/logr v1.2.2
+	github.com/go-logr/logr v1.2.3
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.18.1
