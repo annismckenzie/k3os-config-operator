@@ -11,7 +11,7 @@ require (
 	k8s.io/api v0.23.5
 	k8s.io/apimachinery v0.23.5
 	k8s.io/client-go v0.23.5
-	sigs.k8s.io/cluster-api/test v1.1.2
+	sigs.k8s.io/cluster-api/test v1.1.3
 	sigs.k8s.io/controller-runtime v0.11.1
 )
 
