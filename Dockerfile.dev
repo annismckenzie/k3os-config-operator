@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
   GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -a -o manager main.go
 
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 WORKDIR /
 COPY --from=builder /workspace/manager .
 
