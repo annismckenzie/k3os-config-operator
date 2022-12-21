@@ -26,7 +26,7 @@ jobs:
       with:
         # extract the files into /home/runner/work/_temp/_github_home
         deps: https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-1.17.9-linux-amd64.tar.gz
-    - uses: actions/cache@v2.1.7
+    - uses: actions/cache@v3.2.0
       with:
         path: |
           ~/go/pkg/mod              # Module download cache
